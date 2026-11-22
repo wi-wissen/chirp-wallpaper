@@ -9,7 +9,7 @@ Free, open source (MIT), one small program: no installation, no account, no admi
 * **The story behind the picture**: title, place, copyright, a short text, “Learn more” link, text to copy.
 * **21 languages**, picked from the system language (English otherwise). Pictures and texts follow your Bing region.
 * **Offline-safe**: if no new picture can be loaded, nothing on screen changes; the app says why.
-* **Made for reset school computers**: set up once for all users; a baseline picture covers days without internet.
+* **For all users of a computer**: one click sets up the lock and sign-in screen and the app for every account.
 
 > Chirp Wallpaper is not affiliated with Microsoft. Pictures and texts come from Bing and belong to their photographers.
 
@@ -39,11 +39,9 @@ A click on the tray icon opens the window; closing the window keeps it running i
 No shortcut in the Startup folder is needed (one would open the window at every sign-in).
 Starting the app a second time just brings the open window to the front.
 
-## Reset ("frozen") school computers
+## Set up for all users
 
-Computers that return to a saved state at every start keep what was set up while the image was prepared,
-but lose everything downloaded later. While preparing the image, open the app and choose
-**Settings → Set up for all users**. This
+On shared computers, choose **Settings → Set up for all users** once (administrator rights needed). This
 
 1. copies the app to `C:\Program Files\Chirp Wallpaper`,
 2. stores the region and resolution for the whole computer,
@@ -52,9 +50,9 @@ but lose everything downloaded later. While preparing the image, open the app an
 4. starts the app hidden at every sign-in of every account, also new ones (nobody has to switch it on),
    which sets that user's desktop from the shared download.
 
-Without internet nothing changes: the picture already on the computer stays (on a frozen computer, the one
-from the day the image was prepared). Accounts that never had a picture, e.g. new or reset profiles, get that
-same picture instead of the Windows default. The app tells which picture is shown and why.
+Without internet nothing changes: the picture already on the computer stays. Accounts that never had a picture,
+e.g. new ones, get the computer's latest picture instead of the Windows default. The app tells which picture is
+shown and why.
 
 Network access needed: `www.bing.com` only.
 

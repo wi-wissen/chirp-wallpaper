@@ -26,7 +26,7 @@ use std::time::Duration;
 
 slint::include_modules!();
 
-pub const WEBSITE: &str = "https://wi-wissen.github.io/chirp-wallpaper/";
+pub const WEBSITE: &str = "https://chirp-wallpaper.wi7.net/";
 pub const SOURCE: &str = "https://github.com/wi-wissen/chirp-wallpaper";
 
 thread_local! {

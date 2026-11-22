@@ -6,8 +6,8 @@
 <title>Chirp Wallpaper</title>
 <meta name="description" content="The daily Bing picture as desktop background and lock screen. Free, open source, no installation needed.">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Inter:wght@400;500;600&display=swap">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=fredoka:500,600|inter:400,500,600&display=swap">
 <style>
 :root {
   --sky: #7FB8DE; --dawn: #FFD7A6; --hill: #3E8A7E; --valley: #23645E;
@@ -112,12 +112,11 @@ footer { padding-block: 48px; color: var(--muted); font-size: 0.9rem; }
   </section>
 
   <section>
-    <h2 data-i18n="schools">For schools and reset computers</h2>
-    <p data-i18n="schools-p">On computers that return to a frozen state at every start, prepare the image once: Settings → “Set up for all users”. The app is copied to Program Files, the lock and sign-in screen get the picture for everyone, and today’s picture becomes the baseline for days without internet. Administrators can do the same with the command line program.</p>
+    <h2 data-i18n="schools">For all users of a computer</h2>
+    <p data-i18n="schools-p">On shared computers, choose Settings → “Set up for all users” once. The app is copied to Program Files, the lock and sign-in screen show the picture for everyone, and the app starts for every account. Administrators can do the same with the command line program.</p>
     <pre><code>chirp config --machine --market de-DE
 chirp install --machine
-chirp apply --machine
-chirp seal --machine</code></pre>
+chirp apply --machine</code></pre>
   </section>
 </main>
 
@@ -145,8 +144,8 @@ const T = {
     "f4p": "Wenn kein neues Bild geladen werden kann, ändert sich nichts. Die App merkt sich den Grund und zeigt ihn an.",
     "start": "Loslegen",
     "start-p": "ChirpWallpaper.exe herunterladen und doppelklicken. Unter Einstellungen „Bei der Anmeldung automatisch starten“ einschalten: Die App wartet dann im Infobereich und wechselt das Bild jeden Tag. Eine Verknüpfung im Autostart-Ordner ist nicht nötig.",
-    "schools": "Für Schulen und zurückgesetzte Rechner",
-    "schools-p": "Auf Rechnern, die bei jedem Start auf einen eingefrorenen Stand zurückgehen, richtest du das Image einmal ein: Einstellungen → „Für alle Benutzer einrichten“. Die App wird nach „Programme“ kopiert, Sperr- und Anmeldebildschirm bekommen das Bild für alle, und das heutige Bild wird zum Basisbild für Tage ohne Internet. Admins können dasselbe mit dem Kommandozeilen-Programm erledigen.",
+    "schools": "Für alle Benutzer eines Rechners",
+    "schools-p": "Auf gemeinsam genutzten Rechnern einmal Einstellungen → „Für alle Benutzer einrichten“ wählen. Die App wird nach „Programme“ kopiert, Sperr- und Anmeldebildschirm zeigen das Bild für alle, und die App startet für jedes Konto. Admins können dasselbe mit dem Kommandozeilen-Programm erledigen.",
     "footer": "Chirp Wallpaper steht in keiner Verbindung zu Microsoft. Bilder und Texte stammen von Bing und gehören den Fotografinnen und Fotografen. MIT-Lizenz."
   }
 };

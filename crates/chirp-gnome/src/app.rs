@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 pub const APP_ID: &str = "io.github.wi_wissen.ChirpWallpaper";
-const WEBSITE: &str = "https://wi-wissen.github.io/chirp-wallpaper/";
+const WEBSITE: &str = "https://chirp-wallpaper.wi7.net/";
 const SOURCE: &str = "https://github.com/wi-wissen/chirp-wallpaper";
 
 const CSS: &str = "

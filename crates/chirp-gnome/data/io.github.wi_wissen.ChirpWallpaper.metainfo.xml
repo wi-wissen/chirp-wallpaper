@@ -37,10 +37,10 @@
   <screenshots>
     <screenshot type="default">
       <caption>Today’s picture and the story behind it (sample illustration)</caption>
-      <image>https://wi-wissen.github.io/chirp-wallpaper/screenshots/gnome-today.png</image>
+      <image>https://chirp-wallpaper.wi7.net/screenshots/gnome-today.png</image>
     </screenshot>
   </screenshots>
-  <url type="homepage">https://wi-wissen.github.io/chirp-wallpaper/</url>
+  <url type="homepage">https://chirp-wallpaper.wi7.net/</url>
   <url type="bugtracker">https://github.com/wi-wissen/chirp-wallpaper/issues</url>
   <url type="vcs-browser">https://github.com/wi-wissen/chirp-wallpaper</url>
   <url type="translate">https://github.com/wi-wissen/chirp-wallpaper/tree/main/crates/chirp-native/locales</url>
