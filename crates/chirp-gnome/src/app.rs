@@ -204,6 +204,9 @@ pub struct Ui {
     banner: adw::Banner,
     picture: gtk::Picture,
     spinner_box: gtk::Box,
+    spinner_label: gtk::Label,
+    waiting: RefCell<bool>,
+    retries: RefCell<usize>,
     has_current: RefCell<bool>,
     meta: gtk::Label,
     title: gtk::Label,
@@ -487,6 +490,9 @@ impl Ui {
             banner,
             picture,
             spinner_box,
+            spinner_label,
+            waiting: RefCell::new(false),
+            retries: RefCell::new(0),
             has_current: RefCell::new(false),
             meta,
             title,
@@ -673,6 +679,7 @@ impl Ui {
     }
 
     fn toast(&self, text: &str) {
+        trace(&format!("toast={text}"));
         self.toasts.add_toast(adw::Toast::new(text));
     }
 
@@ -735,14 +742,38 @@ impl Ui {
             w.set_visible(!w.text().is_empty());
         }
         self.picture.set_visible(data.picture.is_some());
+        let busy = *self.busy.borrow();
+        let waiting = *self.waiting.borrow();
         self.spinner_box
-            .set_visible(*self.busy.borrow() && data.picture.is_none());
+            .set_visible((busy || waiting) && data.picture.is_none());
+        self.spinner_label.set_text(&self.l.t(
+            if busy {
+                "today-loading"
+            } else {
+                "today-waiting"
+            },
+            &[],
+        ));
+        if (busy || waiting) && data.picture.is_none() {
+            self.title.set_visible(false);
+            trace(if busy {
+                "spinner=loading"
+            } else {
+                "spinner=waiting"
+            });
+        }
         if let Some(px) = data.picture {
             self.picture.set_paintable(Some(&px.texture()));
         }
         let (status, problem) = ui::status_line(&self.l, &cfg, state, &chirp_core::today());
+        trace(&format!(
+            "snapshot has_picture={} status={status:?} error={problem}",
+            state.current.is_some()
+        ));
+        // No banner while checking, nor while waiting for the very first picture.
+        let show_banner = !status.is_empty() && !busy && (has || !waiting);
         self.banner.set_title(&status);
-        self.banner.set_revealed(!status.is_empty());
+        self.banner.set_revealed(show_banner);
         if problem {
             self.banner.add_css_class("warning");
         } else {
@@ -868,19 +899,42 @@ impl Ui {
         self.refresh();
     }
 
+    /// After a check without connection, try again after 10 s, 20 s, 40 s,
+    /// 1 min, 2 min, then every 5 min; a successful check stops this.
+    fn schedule_retry(self: &Rc<Self>, offline: bool) {
+        const DELAYS: [u32; 6] = [10, 20, 40, 60, 120, 300];
+        if !offline {
+            *self.retries.borrow_mut() = 0;
+            *self.waiting.borrow_mut() = false;
+            trace("waiting=false");
+            return;
+        }
+        let n = *self.retries.borrow();
+        *self.retries.borrow_mut() = n + 1;
+        *self.waiting.borrow_mut() = true;
+        let delay = DELAYS[n.min(DELAYS.len() - 1)];
+        trace(&format!("waiting=true retry_in={delay}s"));
+        let ui = self.clone();
+        glib::timeout_add_seconds_local_once(delay, move || ui.update(false));
+    }
+
     /// Check for a new picture in a worker thread.
     fn update(self: &Rc<Self>, manual: bool) {
         if *self.busy.borrow() {
             return;
         }
         *self.busy.borrow_mut() = true;
+        trace(&format!("busy=true manual={manual}"));
+        self.banner.set_revealed(false);
         self.update_button.set_sensitive(false);
         self.update_button
             .set_label(&self.l.t("today-updating", &[]));
         if !*self.has_current.borrow() {
             // First start: show that today's picture is on its way.
+            self.spinner_label.set_text(&self.l.t("today-loading", &[]));
             self.spinner_box.set_visible(true);
             self.title.set_visible(false);
+            trace("spinner=loading");
         }
         let ui = self.clone();
         glib::spawn_future_local(async move {
@@ -902,10 +956,19 @@ impl Ui {
             })
             .await;
             *ui.busy.borrow_mut() = false;
+            trace("busy=false");
             ui.update_button.set_sensitive(true);
             ui.update_button.set_label(&ui.l.t("today-update", &[]));
             ui.spinner_box.set_visible(false);
             ui.title.set_visible(true);
+            // No connection (e.g. right after sign-in): wait and retry instead of an error.
+            let offline = matches!(result, Ok(Ok(Outcome::Unchanged { .. })))
+                && State::load(&paths().state_file()).offline;
+            ui.schedule_retry(offline);
+            if offline && !manual {
+                ui.refresh();
+                return;
+            }
             // A new picture is always announced, also from the hourly check.
             let announce = manual || matches!(result, Ok(Ok(Outcome::Updated { .. })));
             if announce {
@@ -971,4 +1034,22 @@ fn fit_index(fit: Fit) -> u32 {
 
 fn corner_index(corner: Corner) -> u32 {
     CORNERS.iter().position(|c| *c == corner).unwrap_or(0) as u32
+}
+
+/// With CHIRP_TRACE=<file>, write what the window shows, for automated tests.
+fn trace(event: &str) {
+    thread_local! {
+        static START: std::time::Instant = std::time::Instant::now();
+    }
+    let Some(file) = std::env::var_os("CHIRP_TRACE") else {
+        return;
+    };
+    let ms = START.with(|s| s.elapsed().as_millis());
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(file)
+    {
+        let _ = std::io::Write::write_all(&mut f, format!("{ms} {event}\n").as_bytes());
+    }
 }

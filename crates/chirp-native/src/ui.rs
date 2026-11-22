@@ -91,6 +91,10 @@ pub fn status_line(l: &Localizer, cfg: &Config, state: &State, today: &str) -> (
         let until = cfg.paused_until.clone().unwrap_or_default();
         return (l.t("paused", &[("date", &until)]), false);
     }
+    if state.offline {
+        // Not an error: the apps try again by themselves.
+        return (l.t("status-offline", &[]), false);
+    }
     if let Some(reason) = &state.last_error {
         return (l.t("unchanged", &[("reason", reason)]), true);
     }

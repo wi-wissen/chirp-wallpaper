@@ -106,3 +106,5 @@ unsetup-confirm-title = 移除為所有使用者所做的設定？
 unsetup-confirm-text = 將移除排程工作、所有帳戶的啟動項目、鎖定畫面設定和共用圖片。接下來 Windows 會要求系統管理員帳戶。
 remove-button = 移除
 unsetup-done = 已移除為所有使用者所做的設定。
+today-waiting = 正在等待網路連線 …
+status-offline = 目前沒有網路連線。應用程式會自動重試。

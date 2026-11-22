@@ -106,3 +106,5 @@ unsetup-confirm-title = Ukloniti podešavanje za sve korisnike?
 unsetup-confirm-text = Zakazani zadaci, pokretanje za sve naloge, podešavanje zaključanog ekrana i zajedničke slike biće uklonjeni. Windows će sada tražiti administratorski nalog.
 remove-button = Ukloni
 unsetup-done = Podešavanje za sve korisnike je uklonjeno.
+today-waiting = Čeka se internet veza …
+status-offline = Trenutno nema internet veze. Aplikacija će sama pokušati ponovo.

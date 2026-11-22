@@ -106,3 +106,5 @@ unsetup-confirm-title = 删除为所有用户所做的设置？
 unsetup-confirm-text = 将删除计划任务、所有账户的启动项、锁屏设置和共享图片。接下来 Windows 会要求提供管理员账户。
 remove-button = 删除
 unsetup-done = 已删除为所有用户所做的设置。
+today-waiting = 正在等待网络连接 …
+status-offline = 当前没有网络连接。应用会自动重试。

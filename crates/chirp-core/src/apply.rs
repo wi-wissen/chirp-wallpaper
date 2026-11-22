@@ -120,6 +120,7 @@ pub fn apply_with(
     if trigger == Trigger::Automatic && seen {
         state.last_success = state.last_attempt.clone();
         state.last_error = None;
+        state.offline = false;
         state.save(&paths.state_file())?;
         let shown = state.current.clone().unwrap_or(picture);
         return Ok(Outcome::AlreadyCurrent {
@@ -149,6 +150,7 @@ pub fn apply_with(
     state.daily_id = Some(picture.id.clone());
     state.last_success = state.last_attempt.clone();
     state.last_error = None;
+    state.offline = false;
     state.save(&paths.state_file())?;
     prune(paths, cfg.keep_days, &file);
     if cfg.save_copies && !already {
@@ -174,6 +176,7 @@ fn unchanged(
     err: Error,
 ) -> Result<Outcome> {
     let reason = err.to_string();
+    state.offline = matches!(err, Error::Network(_));
     state.last_error = Some(reason.clone());
     if state.current.is_none() {
         if let Some((picture, file)) = fallback(paths) {
@@ -661,6 +664,7 @@ mod tests {
         assert_eq!(platform.desktop.borrow().len(), 1, "screen must not change");
         let state = State::load(&paths.state_file());
         assert!(state.last_error.is_some());
+        assert!(state.offline, "a network error marks the state as offline");
         std::fs::remove_dir_all(dir).unwrap();
     }
 

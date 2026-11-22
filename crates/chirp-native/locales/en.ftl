@@ -106,3 +106,5 @@ unsetup-confirm-title = Remove setup for all users?
 unsetup-confirm-text = The scheduled tasks, the start for all accounts, the lock screen setting and the shared pictures are removed. Windows will ask for an administrator account next.
 remove-button = Remove
 unsetup-done = Setup for all users removed.
+today-waiting = Waiting for an internet connection …
+status-offline = No internet connection right now. The app tries again by itself.

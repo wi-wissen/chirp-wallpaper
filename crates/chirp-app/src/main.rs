@@ -217,6 +217,7 @@ fn fill_texts(ui: &AppWindow, l: &Localizer) {
         set_about_website => "about-website",
         set_about_source => "about-source",
         set_today_loading => "today-loading",
+        set_today_waiting => "today-waiting",
         set_today_updating => "today-updating",
         set_history_open => "history-open",
         set_settings_appearance => "settings-appearance",
@@ -468,6 +469,10 @@ fn show_snapshot(l: &Localizer, data: model::Loaded) {
             None => ui.set_has_picture(false),
         }
         let (status, is_error) = model::status_line(l, &cfg, state, &chirp_core::today());
+        trace(&format!(
+            "snapshot has_picture={} status={status:?} error={is_error}",
+            state.current.is_some()
+        ));
         ui.set_status_text(status.into());
         ui.set_status_is_error(is_error);
         ui.set_baseline_text(
@@ -516,6 +521,10 @@ pub fn update(manual: bool) {
     if already_busy {
         return;
     }
+    trace(&format!("busy=true manual={manual}"));
+    if SNAPSHOT.with(|s| s.borrow().current.is_none()) {
+        trace("spinner=loading");
+    }
     let paths = user_paths();
     let cfg = effective_config();
     let market = cfg.resolved_market(sys_locale::get_locale().as_deref());
@@ -534,6 +543,16 @@ pub fn update(manual: bool) {
         let _ = slint::invoke_from_event_loop(move || {
             let l = Rc::new(Localizer::new(None));
             with_window(|ui| ui.set_busy(false));
+            trace("busy=false");
+            // No connection (e.g. right after sign-in, before the network is up):
+            // wait and try again soon instead of showing an error.
+            let offline = matches!(outcome, Ok(Outcome::Unchanged { .. }))
+                && chirp_core::State::load(&user_paths().state_file()).offline;
+            schedule_retry(offline);
+            if offline && !manual {
+                refresh();
+                return;
+            }
             // A new picture is always announced, also from the hourly check,
             // so a changing background never comes as a surprise.
             let announce = manual || matches!(outcome, Ok(Outcome::Updated { .. }));
@@ -574,10 +593,62 @@ fn use_history(l: &Rc<Localizer>, index: usize) {
 
 thread_local! {
     static TOAST_TIMER: slint::Timer = slint::Timer::default();
+    static RETRY_TIMER: slint::Timer = slint::Timer::default();
+    static RETRY_COUNT: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// After a failed check without connection, try again after 10 s, 20 s,
+/// 40 s, 1 min, 2 min and then every 5 min; a successful check stops this.
+fn schedule_retry(offline: bool) {
+    const DELAYS: [u64; 6] = [10, 20, 40, 60, 120, 300];
+    if !offline {
+        RETRY_COUNT.with(|c| c.set(0));
+        RETRY_TIMER.with(|t| t.stop());
+        with_window(|ui| ui.set_waiting(false));
+        trace("waiting=false");
+        return;
+    }
+    let n = RETRY_COUNT.with(|c| {
+        let n = c.get();
+        c.set(n + 1);
+        n
+    });
+    let delay = DELAYS[n.min(DELAYS.len() - 1)];
+    with_window(|ui| ui.set_waiting(true));
+    trace(&format!("waiting=true retry_in={delay}s"));
+    if SNAPSHOT.with(|s| s.borrow().current.is_none()) {
+        trace("spinner=waiting");
+    }
+    RETRY_TIMER.with(|t| {
+        t.start(
+            slint::TimerMode::SingleShot,
+            Duration::from_secs(delay),
+            || update(false),
+        )
+    });
+}
+
+/// With CHIRP_TRACE=<file>, write what the window shows, for automated tests.
+pub fn trace(event: &str) {
+    thread_local! {
+        static START: std::time::Instant = std::time::Instant::now();
+    }
+    let Some(file) = std::env::var_os("CHIRP_TRACE") else {
+        return;
+    };
+    let ms = START.with(|s| s.elapsed().as_millis());
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(file)
+    {
+        let _ = std::io::Write::write_all(&mut f, format!("{ms} {event}\n").as_bytes());
+    }
 }
 
 /// Show a short message at the bottom of the window.
 pub fn toast(text: &str) {
+    trace(&format!("toast={text}"));
     with_window(|ui| ui.set_toast(text.into()));
     TOAST_TIMER.with(|t| {
         t.start(slint::TimerMode::SingleShot, Duration::from_secs(5), || {

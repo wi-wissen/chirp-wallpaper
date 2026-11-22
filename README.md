@@ -126,8 +126,13 @@ A test checks that every language has every text.
 
 ```
 cargo test
-cargo build --release -p chirp-app
+cargo build --release -p chirp-app -p chirp-gnome
+scripts/ui-test.py          # start, offline start, offline with picture, layout matrix
+scripts/ui-test.py --gnome
 ```
+
+The UI scenarios use a local stand-in for Bing (`scripts/fake-bing.py`) and also run in CI.
+Rules for contributors (and AI assistants) are in [CLAUDE.md](CLAUDE.md).
 
 ## Release
 

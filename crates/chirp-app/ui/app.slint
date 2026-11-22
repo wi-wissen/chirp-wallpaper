@@ -13,6 +13,7 @@ export global Tr {
     in property <string> today-more: "Learn more";
     in property <string> today-empty: "No picture yet.";
     in property <string> today-loading: "Loading today’s picture …";
+    in property <string> today-waiting: "Waiting for an internet connection …";
     in property <string> today-updating: "Updating …";
     in property <string> history-open: "Open";
     in property <string> settings-appearance: "Appearance";
@@ -202,6 +203,8 @@ export component AppWindow inherits Window {
     in property <string> status-text;
     in property <bool> status-is-error;
     in property <bool> busy;
+    // No connection yet; a new attempt is scheduled.
+    in property <bool> waiting;
     in property <string> baseline-text;
 
     // History
@@ -351,7 +354,7 @@ export component AppWindow inherits Window {
                                     source: root.picture;
                                     image-fit: cover;
                                 }
-                                if !root.has-picture && root.busy: VerticalLayout {
+                                if !root.has-picture && (root.busy || root.waiting): VerticalLayout {
                                     alignment: center;
                                     spacing: 12px;
                                     HorizontalLayout {
@@ -363,13 +366,13 @@ export component AppWindow inherits Window {
                                         }
                                     }
                                     Text {
-                                        text: Tr.today-loading;
+                                        text: root.busy ? Tr.today-loading : Tr.today-waiting;
                                         horizontal-alignment: center;
                                         wrap: word-wrap;
                                         color: Palette.foreground.transparentize(0.35);
                                     }
                                 }
-                                if !root.has-picture && !root.busy: Text {
+                                if !root.has-picture && !root.busy && !root.waiting: Text {
                                     text: Tr.today-empty;
                                     wrap: word-wrap;
                                     horizontal-alignment: center;
@@ -446,7 +449,8 @@ export component AppWindow inherits Window {
                             }
                         }
                     }
-                    if root.status-text != "": Rectangle {
+                    // Hidden while a check runs, and while waiting for the first picture.
+                    if root.status-text != "" && !root.busy && (root.has-picture || !root.waiting): Rectangle {
                         border-radius: 6px;
                         background: root.status-is-error ? #f6a10022 : Palette.accent-background.transparentize(0.85);
                         HorizontalLayout {
@@ -477,11 +481,31 @@ export component AppWindow inherits Window {
             if root.page == 1: Rectangle {
                 property <length> gap: 12px;
                 property <length> avail: self.width - 64px;
-                // Three columns when there is room, otherwise two or one.
-                property <int> cols: avail >= 800px ? 3 : avail >= 500px ? 2 : 1;
-                property <length> tile-w: min(420px, (avail - (cols - 1) * gap) / cols);
-                property <length> info-h: 108px;
+                // As many columns as fit with at least 240 px each; cards at most 300 px wide.
+                property <int> cols: max(1, Math.floor((avail + gap) / (240px + gap)));
+                property <length> tile-w: min(300px, (avail - (cols - 1) * gap) / cols);
+                // Height of the text and buttons below the picture, measured, not guessed.
+                property <length> info-h: info-probe.preferred-height;
                 property <length> tile-h: tile-w * 9 / 16 + info-h;
+                info-probe := VerticalLayout {
+                    visible: false;
+                    padding: 12px;
+                    padding-top: 8px;
+                    spacing: 6px;
+                    VerticalLayout {
+                        Text {
+                            text: "Ag";
+                            font-size: 13px;
+                        }
+                        Text {
+                            text: "2026";
+                            font-size: 11px;
+                        }
+                    }
+                    Button {
+                        text: Tr.history-use;
+                    }
+                }
                 VerticalLayout {
                     padding: 32px;
                     padding-top: 24px;
@@ -621,7 +645,7 @@ export component AppWindow inherits Window {
                                 title: Tr.settings-region;
                                 description: Tr.settings-region-desc;
                                 ComboBox {
-                                    width: 260px;
+                                    width: min(260px, max(150px, sv2.visible-width * 0.3));
                                     model: root.regions;
                                     current-index <=> root.region-index;
                                     selected => {
@@ -632,7 +656,7 @@ export component AppWindow inherits Window {
                             Row {
                                 title: Tr.settings-resolution;
                                 ComboBox {
-                                    width: 260px;
+                                    width: min(260px, max(150px, sv2.visible-width * 0.3));
                                     model: root.resolutions;
                                     current-index <=> root.resolution-index;
                                     selected => {
@@ -644,7 +668,7 @@ export component AppWindow inherits Window {
                                 title: Tr.settings-pause;
                                 description: Tr.settings-pause-desc;
                                 ComboBox {
-                                    width: 260px;
+                                    width: min(260px, max(150px, sv2.visible-width * 0.3));
                                     model: root.pause-options;
                                     current-index <=> root.pause-index;
                                     selected => {
@@ -665,7 +689,7 @@ export component AppWindow inherits Window {
                         Row {
                             title: Tr.settings-fit;
                             ComboBox {
-                                width: 260px;
+                                width: min(260px, max(150px, sv2.visible-width * 0.3));
                                 model: root.fits;
                                 current-index <=> root.fit-index;
                                 selected => {
@@ -676,7 +700,7 @@ export component AppWindow inherits Window {
                         if root.is-windows: Row {
                             title: Tr.settings-screens;
                             ComboBox {
-                                width: 260px;
+                                width: min(260px, max(150px, sv2.visible-width * 0.3));
                                 model: root.screen-options;
                                 current-index <=> root.screens-index;
                                 selected => {
@@ -697,7 +721,7 @@ export component AppWindow inherits Window {
                         if root.caption: Row {
                             title: Tr.settings-caption-position;
                             ComboBox {
-                                width: 260px;
+                                width: min(260px, max(150px, sv2.visible-width * 0.3));
                                 model: root.corners;
                                 current-index <=> root.corner-index;
                                 selected => {

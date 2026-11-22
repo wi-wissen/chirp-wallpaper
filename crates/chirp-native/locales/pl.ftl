@@ -106,3 +106,5 @@ unsetup-confirm-title = Usunąć konfigurację dla wszystkich użytkowników?
 unsetup-confirm-text = Zaplanowane zadania, uruchamianie dla wszystkich kont, ustawienie ekranu blokady i wspólne obrazy zostaną usunięte. Za chwilę Windows poprosi o konto administratora.
 remove-button = Usuń
 unsetup-done = Usunięto konfigurację dla wszystkich użytkowników.
+today-waiting = Oczekiwanie na połączenie z internetem …
+status-offline = Brak połączenia z internetem. Aplikacja spróbuje ponownie sama.

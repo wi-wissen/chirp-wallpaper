@@ -106,3 +106,5 @@ unsetup-confirm-title = Elimini configurarea pentru toți utilizatorii?
 unsetup-confirm-text = Sarcinile programate, pornirea pentru toate conturile, setarea ecranului de blocare și imaginile comune sunt eliminate. Windows va cere acum un cont de administrator.
 remove-button = Elimină
 unsetup-done = Configurarea pentru toți utilizatorii a fost eliminată.
+today-waiting = Se așteaptă conexiunea la internet …
+status-offline = Momentan nu există conexiune la internet. Aplicația încearcă din nou singură.

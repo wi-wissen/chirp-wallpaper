@@ -106,3 +106,5 @@ unsetup-confirm-title = Instelling voor alle gebruikers verwijderen?
 unsetup-confirm-text = De geplande taken, het starten voor alle accounts, de instelling voor het vergrendelingsscherm en de gedeelde afbeeldingen worden verwijderd. Windows vraagt zo om een beheerdersaccount.
 remove-button = Verwijderen
 unsetup-done = Instelling voor alle gebruikers verwijderd.
+today-waiting = Wachten op internetverbinding …
+status-offline = Op dit moment geen internetverbinding. De app probeert het zelf opnieuw.

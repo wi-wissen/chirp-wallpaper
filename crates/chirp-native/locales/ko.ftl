@@ -106,3 +106,5 @@ unsetup-confirm-title = 모든 사용자용 설정을 제거할까요?
 unsetup-confirm-text = 예약된 작업, 모든 계정의 시작, 잠금 화면 설정과 공유 사진이 제거됩니다. 이제 Windows가 관리자 계정을 요청합니다.
 remove-button = 제거
 unsetup-done = 모든 사용자용 설정을 제거했습니다.
+today-waiting = 인터넷 연결을 기다리는 중 …
+status-offline = 지금은 인터넷에 연결되어 있지 않습니다. 앱이 스스로 다시 시도합니다.

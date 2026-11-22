@@ -106,3 +106,5 @@ unsetup-confirm-title = Odstranit nastavení pro všechny uživatele?
 unsetup-confirm-text = Odstraní se naplánované úlohy, spouštění pro všechny účty, nastavení zamykací obrazovky a sdílené obrázky. Windows teď požádá o účet správce.
 remove-button = Odstranit
 unsetup-done = Nastavení pro všechny uživatele bylo odstraněno.
+today-waiting = Čeká se na připojení k internetu …
+status-offline = Momentálně není připojení k internetu. Aplikace to zkusí znovu sama.

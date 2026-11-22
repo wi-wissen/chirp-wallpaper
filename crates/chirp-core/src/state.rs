@@ -21,6 +21,8 @@ pub struct State {
     pub last_success: Option<String>,
     /// Why the last attempt failed; cleared after a success.
     pub last_error: Option<String>,
+    /// The last attempt failed because there was no connection.
+    pub offline: bool,
 }
 
 impl State {

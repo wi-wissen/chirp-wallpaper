@@ -106,3 +106,5 @@ unsetup-confirm-title = Remover a configuração para todos os utilizadores?
 unsetup-confirm-text = As tarefas agendadas, o arranque para todas as contas, a definição do ecrã de bloqueio e as imagens partilhadas são removidos. O Windows vai pedir uma conta de administrador.
 remove-button = Remover
 unsetup-done = Configuração para todos os utilizadores removida.
+today-waiting = A aguardar ligação à Internet …
+status-offline = Sem ligação à Internet de momento. A aplicação volta a tentar sozinha.

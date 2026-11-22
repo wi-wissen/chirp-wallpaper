@@ -106,3 +106,5 @@ unsetup-confirm-title = すべてのユーザー向けの設定を削除しま�
 unsetup-confirm-text = スケジュールされたタスク、すべてのアカウントでの起動、ロック画面の設定、共有の画像を削除します。このあと Windows が管理者アカウントを求めます。
 remove-button = 削除
 unsetup-done = すべてのユーザー向けの設定を削除しました。
+today-waiting = インターネット接続を待っています …
+status-offline = 現在インターネットに接続されていません。アプリが自動的に再試行します。

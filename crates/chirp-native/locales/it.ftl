@@ -106,3 +106,5 @@ unsetup-confirm-title = Rimuovere la configurazione per tutti gli utenti?
 unsetup-confirm-text = Vengono rimosse le attività pianificate, l’avvio per tutti gli account, l’impostazione della schermata di blocco e le immagini condivise. Windows chiederà ora un account amministratore.
 remove-button = Rimuovi
 unsetup-done = Configurazione per tutti gli utenti rimossa.
+today-waiting = In attesa della connessione a Internet …
+status-offline = Nessuna connessione a Internet al momento. L’app riprova da sola.

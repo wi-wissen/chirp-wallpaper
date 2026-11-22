@@ -106,3 +106,5 @@ unsetup-confirm-title = Tüm kullanıcılar için kurulum kaldırılsın mı?
 unsetup-confirm-text = Zamanlanmış görevler, tüm hesaplar için başlatma, kilit ekranı ayarı ve ortak resimler kaldırılır. Windows şimdi bir yönetici hesabı isteyecek.
 remove-button = Kaldır
 unsetup-done = Tüm kullanıcılar için kurulum kaldırıldı.
+today-waiting = İnternet bağlantısı bekleniyor …
+status-offline = Şu anda internet bağlantısı yok. Uygulama kendiliğinden yeniden dener.

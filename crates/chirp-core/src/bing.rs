@@ -16,6 +16,15 @@ use std::time::Duration;
 
 pub const BASE_URL: &str = "https://www.bing.com";
 
+/// The Bing address; `CHIRP_BING_BASE` replaces it in tests (e.g. a local
+/// server that simulates being offline).
+pub fn base_url() -> String {
+    std::env::var("CHIRP_BING_BASE")
+        .ok()
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(|| BASE_URL.to_string())
+}
+
 #[derive(Debug, Deserialize)]
 struct Archive {
     images: Vec<ArchiveImage>,
@@ -187,14 +196,15 @@ fn local_date(fullstartdate: &str) -> Option<String> {
 /// Fetch today's picture (with description, if available) for a market.
 pub fn fetch_latest(market: &str, resolution: Resolution) -> Result<Picture> {
     let agent = agent();
-    let archive_url = format!("{BASE_URL}/HPImageArchive.aspx?format=js&idx=0&n=1&mkt={market}");
+    let base = base_url();
+    let archive_url = format!("{base}/HPImageArchive.aspx?format=js&idx=0&n=1&mkt={market}");
     let body = get_text(&agent, &archive_url)?;
     let mut pictures = parse_archive(&body, market, resolution)?;
     if pictures.is_empty() {
         return Err(Error::Format("no picture in answer".into()));
     }
     // The description is a bonus: ignore failures.
-    if let Ok(details) = get_text(&agent, &format!("{BASE_URL}/hp/api/model?mkt={market}")) {
+    if let Ok(details) = get_text(&agent, &format!("{base}/hp/api/model?mkt={market}")) {
         let _ = merge_details(&mut pictures, &details);
     }
     Ok(pictures.remove(0))
@@ -214,25 +224,22 @@ fn get_text(agent: &ureq::Agent, url: &str) -> Result<String> {
     agent
         .get(url)
         .call()
-        .map_err(|e| Error::Network(short_error(&e)))?
+        .map_err(request_error)?
         .into_string()
         .map_err(|e| Error::Network(e.to_string()))
 }
 
 /// Download `url` into `writer`.
 pub fn download(agent: &ureq::Agent, url: &str, writer: &mut impl std::io::Write) -> Result<u64> {
-    let response = agent
-        .get(url)
-        .call()
-        .map_err(|e| Error::Network(short_error(&e)))?;
+    let response = agent.get(url).call().map_err(request_error)?;
     let mut reader = response.into_reader();
     Ok(std::io::copy(&mut reader, writer)?)
 }
 
-fn short_error(e: &ureq::Error) -> String {
+fn request_error(e: ureq::Error) -> Error {
     match e {
-        ureq::Error::Status(code, _) => format!("HTTP {code}"),
-        ureq::Error::Transport(t) => t.kind().to_string(),
+        ureq::Error::Status(code, _) => Error::Http(code),
+        ureq::Error::Transport(t) => Error::Network(t.kind().to_string()),
     }
 }
 
@@ -240,7 +247,7 @@ fn absolute(path: &str) -> String {
     if path.starts_with("http://") || path.starts_with("https://") {
         path.to_string()
     } else {
-        format!("{BASE_URL}{path}")
+        format!("{}{path}", base_url())
     }
 }
 

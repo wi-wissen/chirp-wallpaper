@@ -28,8 +28,12 @@ pub use state::State;
 /// Errors the core can report.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    /// No connection (no network, DNS or connection failure, timeout).
     #[error("network error: {0}")]
     Network(String),
+    /// The server answered, but not with what was asked for (e.g. blocked by a filter).
+    #[error("the server answered HTTP {0}")]
+    Http(u16),
     #[error("unexpected answer from the picture service: {0}")]
     Format(String),
     #[error("file error: {0}")]

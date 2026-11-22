@@ -106,3 +106,5 @@ unsetup-confirm-title = Einrichtung für alle Benutzer entfernen?
 unsetup-confirm-text = Die geplanten Aufgaben, der Start für alle Konten, die Vorgabe für den Sperrbildschirm und die gemeinsamen Bilder werden entfernt. Windows fragt gleich nach einem Administratorkonto.
 remove-button = Entfernen
 unsetup-done = Einrichtung für alle Benutzer entfernt.
+today-waiting = Warte auf Internetverbindung …
+status-offline = Gerade keine Internetverbindung. Die App versucht es gleich von selbst erneut.
