@@ -65,3 +65,4 @@ about-website = Site
 about-source = Código-fonte
 tray-open = Abrir
 tray-quit = Sair
+settings-autostart-desc-gnome = Roda em segundo plano e troca a imagem todos os dias.

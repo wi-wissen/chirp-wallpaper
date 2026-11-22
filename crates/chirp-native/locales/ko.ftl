@@ -65,3 +65,4 @@ about-website = 웹사이트
 about-source = 소스 코드
 tray-open = 열기
 tray-quit = 종료
+settings-autostart-desc-gnome = 백그라운드에서 실행되며 매일 사진을 바꿉니다.

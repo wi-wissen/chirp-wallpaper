@@ -65,3 +65,4 @@ about-website = Web sitesi
 about-source = Kaynak kodu
 tray-open = Aç
 tray-quit = Çıkış
+settings-autostart-desc-gnome = Arka planda çalışır ve resmi her gün değiştirir.

@@ -65,3 +65,4 @@ about-website = Strona internetowa
 about-source = Kod źródłowy
 tray-open = Otwórz
 tray-quit = Zakończ
+settings-autostart-desc-gnome = Działa w tle i codziennie zmienia obraz.

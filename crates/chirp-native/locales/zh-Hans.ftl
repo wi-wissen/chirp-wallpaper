@@ -65,3 +65,4 @@ about-website = 网站
 about-source = 源代码
 tray-open = 打开
 tray-quit = 退出
+settings-autostart-desc-gnome = 在后台运行，每天更换图片。

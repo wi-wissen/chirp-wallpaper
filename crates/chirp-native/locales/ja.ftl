@@ -65,3 +65,4 @@ about-website = ウェブサイト
 about-source = ソースコード
 tray-open = 開く
 tray-quit = 終了
+settings-autostart-desc-gnome = バックグラウンドで動作し、毎日画像を切り替えます。

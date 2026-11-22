@@ -65,3 +65,4 @@ about-website = Veb-sajt
 about-source = Izvorni kod
 tray-open = Otvori
 tray-quit = Izađi
+settings-autostart-desc-gnome = Radi u pozadini i menja sliku svakog dana.

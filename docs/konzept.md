@@ -13,8 +13,8 @@ Freie Neuentwicklung (Cleanroom) einer App wie „Dynamic Theme“: täglich das
 | Name | Chirp Wallpaper, Programm `chirp` |
 | Logo | E2: Fensterplatz mit drei Möwen über Hügeln bei Sonnenaufgang |
 | Sprache | Rust: eine EXE ohne Laufzeit, ein Kern für Windows und GNOME |
-| Windows-Oberfläche | Slint im Windows-11-Stil (folgt), portable EXE |
-| GNOME-Oberfläche | GTK4 + libadwaita (folgt) |
+| Windows-Oberfläche | Slint im Windows-11-Stil, portable EXE, Infobereich-Symbol, Autostart-Schalter |
+| GNOME-Oberfläche | GTK4 + libadwaita, Hintergrundbetrieb per XDG-Autostart (kein Tray in GNOME) |
 | Lizenz | MIT |
 | Sprachen | 21 Sprachdateien wie im Original (nl-BE nutzt nl), Systemsprache, Standard Englisch |
 | Auflösung | UHD (4K) mit Rückfall auf 1920×1080 |
@@ -41,9 +41,9 @@ Bing liefert zu jedem Bild Titel, Ort, Copyright, einen Absatz Beschreibung (in 
 
 ## Nächste Schritte
 
-1. Auf echtem Windows testen: Sperrbildschirm aus einer EXE ohne Store-Paket, `PersonalizationCSP` auf Education.
-2. Windows-Oberfläche mit Slint nach dem Mockup.
-3. GNOME-App mit libadwaita, Flatpak.
+1. Auf echtem Windows testen: Sperrbildschirm aus einer EXE ohne Store-Paket, `PersonalizationCSP` auf Education, Einrichtung für alle Benutzer.
+2. GNOME als Flatpak (Hintergrund über das Wallpaper-Portal).
+3. Hebräisch: Rechts-nach-links-Darstellung in der Windows-App prüfen.
 4. Eigenes Metadaten-Archiv per Action auf GitHub Pages (Verlauf für alle Regionen).
 5. Demo-Modus mit KI-Bildern für Screenshots.
 6. Code-Signierung (SignPath Foundation) gegen SmartScreen-Warnungen.

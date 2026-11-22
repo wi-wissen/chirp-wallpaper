@@ -65,3 +65,4 @@ about-website = Вебсайт
 about-source = Вихідний код
 tray-open = Відкрити
 tray-quit = Вийти
+settings-autostart-desc-gnome = Працює у фоновому режимі й щодня змінює зображення.

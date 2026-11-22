@@ -65,3 +65,4 @@ about-website = אתר
 about-source = קוד מקור
 tray-open = פתח
 tray-quit = יציאה
+settings-autostart-desc-gnome = פועל ברקע ומחליף את התמונה בכל יום.

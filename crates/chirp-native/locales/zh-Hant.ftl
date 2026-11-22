@@ -65,3 +65,4 @@ about-website = 網站
 about-source = 原始碼
 tray-open = 開啟
 tray-quit = 結束
+settings-autostart-desc-gnome = 在背景執行，每天更換圖片。

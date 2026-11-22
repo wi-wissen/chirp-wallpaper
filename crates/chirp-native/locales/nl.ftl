@@ -65,3 +65,4 @@ about-website = Website
 about-source = Broncode
 tray-open = Openen
 tray-quit = Afsluiten
+settings-autostart-desc-gnome = Draait op de achtergrond en wisselt elke dag de afbeelding.

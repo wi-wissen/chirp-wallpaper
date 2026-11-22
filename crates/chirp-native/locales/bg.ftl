@@ -65,3 +65,4 @@ about-website = Уебсайт
 about-source = Изходен код
 tray-open = Отвори
 tray-quit = Изход
+settings-autostart-desc-gnome = Работи във фонов режим и сменя изображението всеки ден.

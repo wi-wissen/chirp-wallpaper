@@ -2,7 +2,7 @@
 
 # Chirp Wallpaper
 
-The daily Bing picture as desktop background **and** lock screen, for Windows 10/11 (GNOME app follows).
+The daily Bing picture as desktop background **and** lock screen, for Windows 10/11 and GNOME.
 Free, open source (MIT), one small program: no installation, no account, no administrator rights.
 
 * **4K**: downloads the largest version Bing offers (usually 3840×2160), falls back to 1920×1080.
@@ -19,7 +19,7 @@ Free, open source (MIT), one small program: no installation, no account, no admi
 |---|---|
 | **Windows app** | [ChirpWallpaper.exe](https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/ChirpWallpaper.exe) |
 | Windows command line | [chirp-windows-x64.exe](https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/chirp-windows-x64.exe) |
-| Linux command line (GNOME) | [chirp-linux-x86_64.tar.gz](https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/chirp-linux-x86_64.tar.gz) |
+| **Linux app (GNOME)** + command line | [chirp-wallpaper-linux-x86_64.tar.gz](https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/chirp-wallpaper-linux-x86_64.tar.gz) |
 
 ## Windows app
 
@@ -80,11 +80,18 @@ Exit code `2` means "no new picture, nothing changed". A `chirp.toml` next to th
 
 Settings are merged: defaults → machine → portable → user.
 
-## GNOME
+## GNOME app
 
-The command line program sets the desktop with `gsettings`; GNOME's lock screen shows the same picture blurred.
-The login screen (GDM) has no supported setting and is left unchanged. `chirp install` registers a systemd user timer.
-A native GNOME app (GTK 4, libadwaita) is planned.
+Unpack the archive and run `./install.sh` (installs for your user into `~/.local`, no root), then open
+*Chirp Wallpaper* from the app grid. Needs GTK 4.12+ and libadwaita 1.5+ (e.g. Ubuntu 24.04, Fedora 40 or newer).
+
+The app follows GNOME conventions: a header bar with *Today*, *History* and *Settings*, a banner when no new
+picture could be loaded, selectable description text. GNOME has no tray icons, so with *Start automatically at
+sign-in* the app starts without a window (`--background`, XDG autostart), keeps running and checks every hour;
+opening it from the app grid shows the window, closing the window keeps it in the background.
+
+The desktop is set with `gsettings`; GNOME's lock screen shows the same picture blurred, so it follows automatically.
+The login screen (GDM) has no supported setting and is left unchanged. A Flatpak (with the wallpaper portal) is planned.
 
 ## Translations
 
@@ -100,6 +107,7 @@ A test checks that every language has every text.
 | `chirp-native` | Windows and GNOME backends, autostart and tasks, translations |
 | `chirp` | command line program |
 | `chirp-app` | Windows app (Slint, Fluent style, tray icon) |
+| `chirp-gnome` | GNOME app (GTK 4, libadwaita) |
 
 ```
 cargo test

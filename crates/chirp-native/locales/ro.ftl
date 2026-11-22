@@ -65,3 +65,4 @@ about-website = Site web
 about-source = Cod sursă
 tray-open = Deschide
 tray-quit = Ieșire
+settings-autostart-desc-gnome = Rulează în fundal și schimbă imaginea în fiecare zi.

@@ -65,3 +65,4 @@ about-website = Веб-сајт
 about-source = Изворни код
 tray-open = Отвори
 tray-quit = Изађи
+settings-autostart-desc-gnome = Ради у позадини и мења слику сваког дана.

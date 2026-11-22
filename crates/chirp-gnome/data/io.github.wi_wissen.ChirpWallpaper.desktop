@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Chirp Wallpaper
+Comment=The daily Bing picture as desktop background
+Comment[de]=Das tägliche Bing-Bild als Desktop-Hintergrund
+Exec=chirp-wallpaper
+Icon=io.github.wi_wissen.ChirpWallpaper
+Terminal=false
+Categories=GNOME;GTK;Utility;DesktopSettings;
+Keywords=wallpaper;background;bing;picture;
+StartupNotify=true

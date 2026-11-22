@@ -3,6 +3,7 @@
 
 pub mod i18n;
 pub mod platform;
+pub mod ui;
 
 pub use i18n::Localizer;
 pub use platform::{InstallError, NativePlatform};

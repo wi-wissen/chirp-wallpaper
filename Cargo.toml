@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/chirp-core", "crates/chirp-native", "crates/chirp", "crates/chirp-app"]
+members = ["crates/chirp-core", "crates/chirp-native", "crates/chirp", "crates/chirp-app", "crates/chirp-gnome"]
 
 [workspace.package]
 version = "0.1.0"

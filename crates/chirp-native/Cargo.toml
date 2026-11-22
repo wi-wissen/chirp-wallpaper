@@ -12,6 +12,7 @@ chirp-core = { path = "../chirp-core" }
 fluent-bundle = "0.15"
 unic-langid = "0.9"
 sys-locale = "0.3"
+time = { version = "0.3", features = ["parsing", "formatting", "macros"] }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"

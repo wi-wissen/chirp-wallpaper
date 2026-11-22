@@ -65,3 +65,4 @@ about-website = Web
 about-source = Zdrojový kód
 tray-open = Otevřít
 tray-quit = Ukončit
+settings-autostart-desc-gnome = Běží na pozadí a každý den mění obrázek.

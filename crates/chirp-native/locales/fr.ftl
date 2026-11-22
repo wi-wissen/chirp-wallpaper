@@ -65,3 +65,4 @@ about-website = Site web
 about-source = Code source
 tray-open = Ouvrir
 tray-quit = Quitter
+settings-autostart-desc-gnome = S’exécute en arrière-plan et change l’image chaque jour.

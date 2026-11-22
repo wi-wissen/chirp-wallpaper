@@ -59,7 +59,7 @@ jobs:
             binary: chirp.exe
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            asset: chirp-linux-x86_64.tar.gz
+            asset: chirp-wallpaper-linux-x86_64.tar.gz
             package: chirp
             binary: chirp
     steps:
@@ -74,7 +74,12 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: sed -i.bak "0,/^version = \".*\"/s//version = \"$VERSION\"/" Cargo.toml && rm Cargo.toml.bak
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev libadwaita-1-dev
       - run: cargo build --release --target ${{ matrix.target }} -p ${{ matrix.package }}
+      - if: runner.os == 'Linux'
+        run: cargo build --release --target ${{ matrix.target }} -p chirp-gnome
       - name: Package (Windows)
         if: runner.os == 'Windows'
         shell: bash
@@ -83,7 +88,8 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           mkdir chirp-wallpaper
-          cp target/${{ matrix.target }}/release/${{ matrix.binary }} README.md LICENSE chirp-wallpaper/
+          cp target/${{ matrix.target }}/release/chirp target/${{ matrix.target }}/release/chirp-wallpaper \
+             crates/chirp-gnome/data/* README.md LICENSE chirp-wallpaper/
           tar czf ${{ matrix.asset }} chirp-wallpaper
       - uses: actions/upload-artifact@v4
         with:
