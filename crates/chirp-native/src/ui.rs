@@ -85,26 +85,6 @@ pub fn meta_line(p: &Picture) -> String {
         .join(" · ")
 }
 
-/// Text placed on the clipboard: everything needed to look the picture up.
-pub fn copy_text(p: &Picture) -> String {
-    let mut parts = vec![p.title.clone()];
-    if !p.caption.is_empty() && p.caption != p.title {
-        parts.push(p.caption.clone());
-    }
-    if !p.copyright.is_empty() {
-        parts.push(p.copyright.clone());
-    }
-    if let Some(d) = &p.description {
-        parts.push(String::new());
-        parts.push(d.clone());
-    }
-    if let Some(u) = &p.info_url {
-        parts.push(String::new());
-        parts.push(u.clone());
-    }
-    parts.join("\n")
-}
-
 /// Status line under the picture: (text, is it a problem?).
 pub fn status_line(l: &Localizer, cfg: &Config, state: &State, today: &str) -> (String, bool) {
     if cfg.is_paused(today) {

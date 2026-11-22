@@ -87,6 +87,9 @@ fn run(background: bool) -> Result<(), slint::PlatformError> {
     {
         ui.set_page(page);
     }
+    if std::env::var_os("CHIRP_CONFIRM").is_some() {
+        ui.set_confirm_admin(true);
+    }
     refresh();
     if !background {
         ui.show()?;
@@ -140,7 +143,6 @@ fn fill_texts(ui: &AppWindow, l: &Localizer) {
         set_nav_about => "nav-about",
         set_today_update => "today-update",
         set_today_more => "label-more",
-        set_today_copy => "today-copy",
         set_today_show_file => "today-show-file",
         set_today_empty => "today-empty",
         set_history_empty => "history-empty",
@@ -161,6 +163,15 @@ fn fill_texts(ui: &AppWindow, l: &Localizer) {
         set_settings_admin_title => "settings-admin-title",
         set_settings_admin_desc => "settings-admin-desc",
         set_settings_admin_button => "settings-admin-button",
+        set_admin_confirm_title => "admin-confirm-title",
+        set_admin_confirm_intro => "admin-confirm-intro",
+        set_admin_step_copy => "admin-step-copy",
+        set_admin_step_lock => "admin-step-lock",
+        set_admin_step_signin => "admin-step-signin",
+        set_admin_step_baseline => "admin-step-baseline",
+        set_admin_confirm_uac => "admin-confirm-uac",
+        set_admin_confirm_ok => "admin-confirm-ok",
+        set_cancel => "cancel",
         set_label_baseline => "label-baseline",
         set_about_text => "about-text",
         set_about_website => "about-website",
@@ -249,20 +260,6 @@ fn connect(ui: &AppWindow, l: Rc<Localizer>) {
             }
         })
     });
-    {
-        let l = l.clone();
-        ui.on_copy_text(move || {
-            let text = SNAPSHOT.with(|s| s.borrow().current.as_ref().map(model::copy_text));
-            if let Some(text) = text {
-                let ok = arboard::Clipboard::new()
-                    .and_then(|mut c| c.set_text(text))
-                    .is_ok();
-                if ok {
-                    toast(&l.t("today-copied", &[]));
-                }
-            }
-        });
-    }
     ui.on_show_file(|| {
         let file = SNAPSHOT.with(|s| s.borrow().current_file.clone());
         if let Some(file) = file {

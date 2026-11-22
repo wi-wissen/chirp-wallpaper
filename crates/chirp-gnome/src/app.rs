@@ -170,7 +170,6 @@ pub struct Ui {
     baseline: gtk::Label,
     update_button: gtk::Button,
     more_button: gtk::Button,
-    copy_button: gtk::Button,
     file_button: gtk::Button,
     history: gtk::FlowBox,
     history_empty: gtk::Label,
@@ -244,7 +243,9 @@ impl Ui {
         let caption = label(&[]);
         let copyright = label(&["dim-label", "caption"]);
         let description = label(&["body"]);
-        description.set_selectable(true);
+        for l in [&title, &caption, &copyright, &description] {
+            l.set_selectable(true);
+        }
         let baseline = label(&["dim-label", "caption"]);
         let update_button = gtk::Button::builder()
             .label(l.t("today-update", &[]))
@@ -254,16 +255,12 @@ impl Ui {
             .label(l.t("label-more", &[]))
             .css_classes(["pill"])
             .build();
-        let copy_button = gtk::Button::builder()
-            .label(l.t("today-copy", &[]))
-            .css_classes(["pill"])
-            .build();
         let file_button = gtk::Button::builder()
             .label(l.t("today-show-file", &[]))
             .css_classes(["pill"])
             .build();
         let buttons = gtk::Box::new(gtk::Orientation::Horizontal, 8);
-        for b in [&update_button, &more_button, &copy_button, &file_button] {
+        for b in [&update_button, &more_button, &file_button] {
             buttons.append(b);
         }
         let today = gtk::Box::builder()
@@ -387,7 +384,6 @@ impl Ui {
             baseline,
             update_button,
             more_button,
-            copy_button,
             file_button,
             history,
             history_empty,
@@ -446,15 +442,6 @@ impl Ui {
                         gio::Cancellable::NONE,
                         |_| {},
                     );
-                }
-            });
-        }
-        {
-            let ui = self.clone();
-            self.copy_button.connect_clicked(move |_| {
-                if let Some(p) = ui.current.borrow().as_ref() {
-                    ui.window.clipboard().set_text(&ui::copy_text(p));
-                    ui.toast(&ui.l.t("today-copied", &[]));
                 }
             });
         }
@@ -607,7 +594,6 @@ impl Ui {
         ] {
             w.set_visible(!w.text().is_empty());
         }
-        self.copy_button.set_visible(has);
         self.file_button.set_visible(has);
         self.picture.set_visible(data.picture.is_some());
         if let Some(px) = data.picture {

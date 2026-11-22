@@ -11,7 +11,6 @@ export global Tr {
     in property <string> nav-about: "About";
     in property <string> today-update: "Update now";
     in property <string> today-more: "Learn more";
-    in property <string> today-copy: "Copy text";
     in property <string> today-show-file: "Show file";
     in property <string> today-empty: "No picture yet.";
     in property <string> history-empty: "Pictures of the last days appear here.";
@@ -32,6 +31,15 @@ export global Tr {
     in property <string> settings-admin-title: "Set up for all users";
     in property <string> settings-admin-desc: "";
     in property <string> settings-admin-button: "Set up …";
+    in property <string> admin-confirm-title: "Set up for all users?";
+    in property <string> admin-confirm-intro: "";
+    in property <string> admin-step-copy: "";
+    in property <string> admin-step-lock: "";
+    in property <string> admin-step-signin: "";
+    in property <string> admin-step-baseline: "";
+    in property <string> admin-confirm-uac: "";
+    in property <string> admin-confirm-ok: "Continue";
+    in property <string> cancel: "Cancel";
     in property <string> label-baseline: "Baseline picture";
     in property <string> about-text: "";
     in property <string> about-website: "Website";
@@ -97,37 +105,59 @@ component NavItem inherits Rectangle {
     }
 }
 
+// Like the rows in the Windows 11 settings: light surface, barely visible edge.
 component Card inherits Rectangle {
-    background: Palette.control-background;
+    background: Palette.color-scheme == ColorScheme.dark ? #ffffff0d : #ffffffb3;
     border-radius: 6px;
     border-width: 1px;
-    border-color: Palette.border;
+    border-color: Palette.color-scheme == ColorScheme.dark ? #ffffff10 : #0000000f;
 }
 
-component Row inherits HorizontalLayout {
+// Text the user can select and copy (Ctrl+C), e.g. to search for the place.
+component SelectableText inherits TextInput {
+    read-only: true;
+    single-line: false;
+    wrap: word-wrap;
+    font-size: 14px;
+    color: Palette.foreground;
+    selection-background-color: Palette.accent-background.transparentize(0.6);
+    selection-foreground-color: Palette.foreground;
+}
+
+component Row inherits Rectangle {
     in property <string> title;
     in property <string> description;
-    padding: 14px;
-    padding-left: 18px;
-    padding-right: 18px;
-    spacing: 16px;
-    VerticalLayout {
-        alignment: center;
-        horizontal-stretch: 1;
-        Text {
-            text: root.title;
-            font-size: 14px;
-            color: Palette.foreground;
-            wrap: word-wrap;
+    background: Palette.color-scheme == ColorScheme.dark ? #ffffff0d : #ffffffb3;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: Palette.color-scheme == ColorScheme.dark ? #ffffff10 : #0000000f;
+    min-height: 62px;
+    HorizontalLayout {
+        padding: 12px;
+        padding-left: 18px;
+        padding-right: 18px;
+        spacing: 16px;
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            Text {
+                text: root.title;
+                font-size: 14px;
+                color: Palette.foreground;
+                wrap: word-wrap;
+            }
+            if root.description != "": Text {
+                text: root.description;
+                font-size: 12px;
+                color: Palette.foreground.transparentize(0.35);
+                wrap: word-wrap;
+            }
         }
-        if root.description != "": Text {
-            text: root.description;
-            font-size: 12px;
-            color: Palette.foreground.transparentize(0.35);
-            wrap: word-wrap;
+        VerticalLayout {
+            alignment: center;
+            @children
         }
     }
-    @children
 }
 
 component SectionTitle inherits Text {
@@ -178,10 +208,10 @@ export component AppWindow inherits Window {
     in-out property <int> pause-index;
 
     in property <string> toast;
+    in-out property <bool> confirm-admin;
 
     callback update-now();
     callback open-info();
-    callback copy-text();
     callback show-file();
     callback use-history(int);
     callback settings-changed();
@@ -272,85 +302,82 @@ export component AppWindow inherits Window {
                     }
                     HorizontalLayout {
                         spacing: 24px;
+                        // Monitor-like frame, as in the mockup
                         Rectangle {
-                            width: 360px;
-                            height: 203px;
-                            border-radius: 8px;
-                            clip: true;
-                            background: Palette.alternate-background;
-                            if root.has-picture: Image {
-                                width: parent.width;
-                                height: parent.height;
-                                source: root.picture;
-                                image-fit: cover;
-                            }
-                            if !root.has-picture: Text {
-                                text: Tr.today-empty;
-                                wrap: word-wrap;
-                                horizontal-alignment: center;
-                                vertical-alignment: center;
-                                width: parent.width - 32px;
-                                color: Palette.foreground.transparentize(0.35);
+                            width: 368px;
+                            height: 211px;
+                            border-radius: 10px;
+                            background: Palette.color-scheme == ColorScheme.dark ? #3a3a3a : #1b1b1b;
+                            Rectangle {
+                                x: 4px;
+                                y: 4px;
+                                width: parent.width - 8px;
+                                height: parent.height - 8px;
+                                border-radius: 7px;
+                                clip: true;
+                                background: Palette.alternate-background;
+                                if root.has-picture: Image {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    source: root.picture;
+                                    image-fit: cover;
+                                }
+                                if !root.has-picture: Text {
+                                    text: Tr.today-empty;
+                                    wrap: word-wrap;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                    width: parent.width - 32px;
+                                    color: Palette.foreground.transparentize(0.35);
+                                }
                             }
                         }
                         VerticalLayout {
                             alignment: end;
-                            spacing: 6px;
+                            spacing: 4px;
                             horizontal-stretch: 1;
                             Text {
                                 text: root.pic-meta;
                                 font-size: 12px;
                                 color: Palette.foreground.transparentize(0.35);
                             }
-                            Text {
+                            SelectableText {
                                 text: root.pic-title;
                                 font-size: 22px;
                                 font-weight: 600;
-                                wrap: word-wrap;
-                                color: Palette.foreground;
                             }
-                            if root.pic-caption != "": Text {
+                            if root.pic-caption != "": SelectableText {
                                 text: root.pic-caption;
-                                font-size: 14px;
-                                wrap: word-wrap;
-                                color: Palette.foreground;
                             }
-                            if root.pic-copyright != "": Text {
+                            if root.pic-copyright != "": SelectableText {
                                 text: root.pic-copyright;
                                 font-size: 12px;
-                                wrap: word-wrap;
                                 color: Palette.foreground.transparentize(0.35);
                             }
-                        }
-                    }
-                    HorizontalLayout {
-                        padding-top: 0px;
-                        spacing: 8px;
-                        alignment: start;
-                        Button {
-                            text: Tr.today-update;
-                            primary: true;
-                            enabled: !root.busy;
-                            clicked => {
-                                root.update-now();
-                            }
-                        }
-                        if root.has-info-url: Button {
-                            text: Tr.today-more;
-                            clicked => {
-                                root.open-info();
-                            }
-                        }
-                        if root.has-picture: Button {
-                            text: Tr.today-copy;
-                            clicked => {
-                                root.copy-text();
-                            }
-                        }
-                        if root.has-picture: Button {
-                            text: Tr.today-show-file;
-                            clicked => {
-                                root.show-file();
+                            HorizontalLayout {
+                                padding-top: 10px;
+                                spacing: 8px;
+                                alignment: start;
+                                Button {
+                                    text: Tr.today-update;
+                                    primary: true;
+                                    enabled: !root.busy;
+                                    clicked => {
+                                        root.update-now();
+                                    }
+                                }
+                                if root.has-info-url: Button {
+                                    text: Tr.today-more;
+                                    clicked => {
+                                        root.open-info();
+                                    }
+                                }
+                                if root.has-picture: Button {
+                                    text: Tr.today-show-file;
+                                    clicked => {
+                                        root.show-file();
+                                    }
+                                }
                             }
                         }
                     }
@@ -368,16 +395,9 @@ export component AppWindow inherits Window {
                             }
                         }
                     }
-                    if root.pic-description != "": Card {
-                        VerticalLayout {
-                            padding: 18px;
-                            Text {
-                                text: root.pic-description;
-                                wrap: word-wrap;
-                                font-size: 14px;
-                                color: Palette.foreground;
-                            }
-                        }
+                    if root.pic-description != "": SelectableText {
+                        text: root.pic-description;
+                        font-size: 14px;
                     }
                     if root.baseline-text != "": Text {
                         text: root.baseline-text;
@@ -477,8 +497,9 @@ export component AppWindow inherits Window {
                     SectionTitle {
                         text: Tr.settings-general;
                     }
-                    Card {
+                    VerticalLayout {
                         VerticalLayout {
+                            spacing: 4px;
                             Row {
                                 title: Tr.settings-autostart;
                                 description: Tr.settings-autostart-desc;
@@ -516,8 +537,9 @@ export component AppWindow inherits Window {
                     SectionTitle {
                         text: Tr.settings-picture;
                     }
-                    Card {
+                    VerticalLayout {
                         VerticalLayout {
+                            spacing: 4px;
                             Row {
                                 title: Tr.settings-region;
                                 description: Tr.settings-region-desc;
@@ -561,8 +583,9 @@ export component AppWindow inherits Window {
                     if root.is-windows: SectionTitle {
                         text: Tr.settings-admin;
                     }
-                    if root.is-windows: Card {
+                    if root.is-windows: VerticalLayout {
                         VerticalLayout {
+                            spacing: 4px;
                             Row {
                                 title: Tr.settings-admin-title;
                                 description: Tr.settings-admin-desc;
@@ -570,7 +593,7 @@ export component AppWindow inherits Window {
                                     text: Tr.settings-admin-button;
                                     enabled: !root.busy;
                                     clicked => {
-                                        root.setup-machine();
+                                        root.confirm-admin = true;
                                     }
                                 }
                             }
@@ -660,6 +683,74 @@ export component AppWindow inherits Window {
                     horizontal-alignment: center;
                     vertical-alignment: center;
                     color: Palette.background;
+                }
+            }
+        }
+    }
+
+    // Explain what "set up for all users" does before Windows asks for rights
+    if root.confirm-admin: Rectangle {
+        background: #00000060;
+        TouchArea { }
+        Rectangle {
+            width: min(560px, parent.width - 48px);
+            height: dialog.preferred-height;
+            border-radius: 8px;
+            background: Palette.background;
+            drop-shadow-blur: 24px;
+            drop-shadow-color: #00000050;
+            dialog := VerticalLayout {
+                padding: 24px;
+                spacing: 12px;
+                Text {
+                    text: Tr.admin-confirm-title;
+                    font-size: 20px;
+                    font-weight: 600;
+                    wrap: word-wrap;
+                    color: Palette.foreground;
+                }
+                Text {
+                    text: Tr.admin-confirm-intro;
+                    wrap: word-wrap;
+                    color: Palette.foreground;
+                }
+                for step in [Tr.admin-step-copy, Tr.admin-step-lock, Tr.admin-step-signin, Tr.admin-step-baseline]: HorizontalLayout {
+                    spacing: 8px;
+                    Text {
+                        text: "•";
+                        color: Palette.foreground;
+                    }
+                    Text {
+                        text: step;
+                        wrap: word-wrap;
+                        horizontal-stretch: 1;
+                        color: Palette.foreground;
+                    }
+                }
+                Text {
+                    text: Tr.admin-confirm-uac;
+                    wrap: word-wrap;
+                    font-size: 12px;
+                    color: Palette.foreground.transparentize(0.35);
+                }
+                HorizontalLayout {
+                    padding-top: 8px;
+                    spacing: 8px;
+                    alignment: end;
+                    Button {
+                        text: Tr.cancel;
+                        clicked => {
+                            root.confirm-admin = false;
+                        }
+                    }
+                    Button {
+                        text: Tr.admin-confirm-ok;
+                        primary: true;
+                        clicked => {
+                            root.confirm-admin = false;
+                            root.setup-machine();
+                        }
+                    }
                 }
             }
         }

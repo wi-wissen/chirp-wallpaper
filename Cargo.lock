@@ -832,7 +832,6 @@ dependencies = [
 name = "chirp-app"
 version = "0.1.0"
 dependencies = [
- "arboard",
  "chirp-core",
  "chirp-native",
  "image",
