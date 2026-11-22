@@ -44,7 +44,7 @@ pub fn request_autostart(enable: bool, reason: &str) -> std::result::Result<(), 
         Background::request()
             .reason(reason)
             .auto_start(enable)
-            .command(&["chirp-wallpaper", "--background"])
+            .command(["chirp-wallpaper", "--background"])
             .dbus_activatable(false)
             .send()
             .await?
