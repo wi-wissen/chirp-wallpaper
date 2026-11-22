@@ -97,6 +97,15 @@ class Run:
                        check=False, stderr=subprocess.DEVNULL)
         return path
 
+    def wait_for(self, text, seconds):
+        """Wait until the trace contains `text` (or the time is up)."""
+        end = time.monotonic() + seconds
+        while time.monotonic() < end:
+            if any(text in e for _, e in self.events()):
+                return True
+            time.sleep(0.2)
+        return False
+
     def stop(self):
         self.app.send_signal(signal.SIGTERM)
         self.app.wait(timeout=10)
@@ -143,14 +152,21 @@ def first(events, prefix):
 def scenario_first_start(home):
     """Empty profile, network fine but pictures slow: the spinner must be visible."""
     run = Run("first-start", home, slow=4)
-    times = [0.8, 2.5, 5, 9]
+    times = [0.8, 2.5]
     shots = [run.shot(t, OUT / f"first-start-{t}s.png") for t in times]
+    run.wait_for("has_picture=true", 30)
+    time.sleep(0.5)
+    shots.append(run.shot(0, OUT / "first-start-picture.png"))
+    run.wait_for("toast=", 5)
+    run.wait_for("history-complete", 20)
     run.stop()
     ev = run.events()
     c = Check("first-start")
     busy, pic = first(ev, "busy=true"), first(ev, "snapshot has_picture=true")
     c.that(busy is not None and busy < 1500, f"check starts at once (busy after {busy} ms)")
     c.that(pic is not None, f"picture appears (after {pic} ms)")
+    c.that(pic is not None and pic < 7000,
+           "picture appears after one slow download (history previews come later)")
     c.that(busy is not None and pic is not None and pic - busy > 2000,
            "loading state lasts long enough to be seen (spinner)")
     c.that(not any("error=true" in e for _, e in ev), "no error shown")
@@ -158,15 +174,21 @@ def scenario_first_start(home):
     c.that("spinner=waiting" not in [e for _, e in ev],
            "never claims to wait for a connection while online")
     c.that(any(e.startswith("toast=") for _, e in ev), "new picture is announced")
-    strip(shots, OUT / "first-start.png", [f"{t}s" for t in times])
+    thumbs = list((home / "data/chirp-wallpaper/images").glob("*.thumb.jpg"))
+    c.that(first(ev, "history-complete") is not None and len(thumbs) == 1,
+           "history preview is loaded afterwards")
+    strip(shots, OUT / "first-start.png", [f"{t}s" for t in times] + ["picture"])
     return c
 
 
 def scenario_offline_start(home):
     """Empty profile, no network for 25 s (e.g. right after sign-in)."""
     run = Run("offline-start", home, offline_for=25, slow=1)
-    times = [1.5, 8, 20, 40]
+    times = [1.5, 8, 20]
     shots = [run.shot(t, OUT / f"offline-start-{t}s.png") for t in times]
+    run.wait_for("has_picture=true", 60)
+    time.sleep(0.5)
+    shots.append(run.shot(0, OUT / "offline-start-picture.png"))
     run.stop()
     ev = run.events()
     c = Check("offline-start")
@@ -177,13 +199,14 @@ def scenario_offline_start(home):
     c.that(pic is not None and pic > 25000, f"picture appears once online (after {pic} ms)")
     c.that(not any(e.startswith("toast=") and t < 25000 for t, e in ev),
            "no message while offline")
-    strip(shots, OUT / "offline-start.png", [f"{t}s" for t in times])
+    strip(shots, OUT / "offline-start.png", [f"{t}s" for t in times] + ["picture"])
     return c
 
 
 def scenario_offline_with_picture(home):
     """A picture from before, no network at all: picture stays, calm note, no error."""
     run = Run("offline-with-picture", home, offline_for=10_000)
+    run.wait_for("has_picture=true", 20)
     times = [3, 15]
     shots = [run.shot(t, OUT / f"offline-with-picture-{t}s.png") for t in times]
     run.stop()

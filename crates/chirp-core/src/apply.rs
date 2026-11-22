@@ -134,7 +134,6 @@ pub fn apply_with(
         Err(e) => return unchanged(cfg, paths, platform, &mut state, e),
     };
     write_json(&paths.meta_file(&picture), &picture)?;
-    fetch_thumb(paths, &picture, download);
 
     let shown = display_image(cfg, paths, &picture, &file);
     let warnings = set_screens(cfg, platform, &shown);
@@ -315,6 +314,23 @@ fn ensure_image(paths: &Paths, picture: &Picture, download: DownloadFn) -> Resul
     }
     std::fs::rename(&part, &file)?;
     Ok(file)
+}
+
+/// Download missing history previews. Called after a picture was set, so a
+/// slow connection never delays the new picture itself.
+pub fn complete_history(paths: &Paths) {
+    let agent = crate::bing::agent();
+    let download = |url: &str, dest: &Path| -> Result<()> {
+        let mut file = std::fs::File::create(dest)?;
+        crate::bing::download(&agent, url, &mut file).map(|_| ())
+    };
+    complete_history_with(paths, &download);
+}
+
+pub fn complete_history_with(paths: &Paths, download: DownloadFn) {
+    for item in history(paths) {
+        fetch_thumb(paths, &item.picture, download);
+    }
 }
 
 /// Download the small preview; failures only mean the gallery shows the big picture.
@@ -1013,6 +1029,7 @@ mod tests {
             )
             .unwrap();
         }
+        complete_history_with(&paths, &write_jpeg);
         let list = history(&paths);
         let dates: Vec<&str> = list.iter().map(|c| c.picture.date.as_str()).collect();
         assert_eq!(dates, ["2026-11-22", "2026-11-21", "2026-11-20"]);

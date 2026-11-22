@@ -573,6 +573,19 @@ pub fn update(manual: bool) {
                 toast(&msg);
             }
             refresh();
+            complete_history_later();
+        });
+    });
+}
+
+/// Load missing history previews after the picture is shown, then show them.
+fn complete_history_later() {
+    let paths = user_paths();
+    std::thread::spawn(move || {
+        chirp_core::complete_history(&paths);
+        let _ = slint::invoke_from_event_loop(|| {
+            trace("history-complete");
+            refresh();
         });
     });
 }

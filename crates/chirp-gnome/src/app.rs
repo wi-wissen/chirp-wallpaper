@@ -990,6 +990,10 @@ impl Ui {
                 ui.toast(&msg);
             }
             ui.refresh();
+            // History previews only after the picture is shown.
+            let _ = gio::spawn_blocking(|| chirp_core::complete_history(&paths())).await;
+            trace("history-complete");
+            ui.refresh();
         });
     }
 }

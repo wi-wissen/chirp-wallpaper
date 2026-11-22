@@ -16,8 +16,8 @@ pub mod schedule;
 pub mod state;
 
 pub use apply::{
-    apply, copies_dir, history, reapply, use_cached, CachedPicture, Outcome, Platform, Target,
-    Trigger,
+    apply, complete_history, copies_dir, history, reapply, use_cached, CachedPicture, Outcome,
+    Platform, Target, Trigger,
 };
 pub use config::{Config, Corner, Fit, Layout, Resolution, Screens};
 pub use paths::{Paths, Scope};

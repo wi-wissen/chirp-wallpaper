@@ -156,6 +156,7 @@ fn run_apply(l: &Localizer, paths: &Paths, machine: bool, quiet: bool) -> CmdRes
         },
     )
     .map_err(|e| e.to_string())?;
+    chirp_core::complete_history(paths);
     match outcome {
         Outcome::Updated { picture, warnings } | Outcome::AlreadyCurrent { picture, warnings }
             if !warnings.is_empty() =>
