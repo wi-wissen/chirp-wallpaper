@@ -1,0 +1,24 @@
+# Chirp Wallpaper — Português (Brasil) (tradução inicial, a revisar)
+updated = Nova imagem definida: { $title }
+already-current = A imagem está atualizada: { $title }
+unchanged = Não foi possível carregar uma nova imagem ({ $reason }). A imagem atual continua.
+unchanged-kept = Ainda na tela: { $title } de { $date }.
+paused = A troca de imagem está pausada até { $date }.
+warning-desktop = Não foi possível alterar o papel de parede: { $reason }
+warning-lockscreen = Não foi possível alterar a tela de bloqueio: { $reason }
+status-heading = Imagem atual
+label-date = Data
+label-region = Região
+label-copyright = Direitos autorais
+label-more = Saiba mais
+label-last-success = Última atualização
+label-last-error = Último erro
+label-baseline = Imagem base
+none = nenhuma
+seal-done = Imagem base salva: { $title } ({ $date })
+install-done = A troca automática de imagem está configurada.
+uninstall-done = A troca automática de imagem foi removida.
+config-saved = Configurações salvas: { $file }
+needs-admin = São necessários direitos de administrador. Execute novamente como administrador.
+not-supported = Não disponível neste sistema.
+error = Erro: { $reason }

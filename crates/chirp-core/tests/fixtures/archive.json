@@ -1,0 +1,24 @@
+{
+  "images": [
+    {
+      "startdate": "20261122",
+      "fullstartdate": "202611212300",
+      "enddate": "20261123",
+      "url": "/th?id=OHR.SampleHills_DE-DE123_1920x1080.jpg&rf=LaDigue_1920x1080.jpg&pid=hp",
+      "urlbase": "/th?id=OHR.SampleHills_DE-DE123",
+      "copyright": "Hügel bei Sonnenaufgang, Beispielland (© Beispiel Fotografin/Beispiel Agentur)",
+      "copyrightlink": "https://www.bing.com/search?q=H%C3%BCgel+Sonnenaufgang&form=hpcapt",
+      "title": "Möwen über den Hügeln",
+      "wp": true,
+      "hsh": "0000"
+    },
+    {
+      "startdate": "20261121",
+      "urlbase": "/th?id=OHR.SampleCoast_DE-DE456",
+      "copyright": "Küste im Nebel (© Beispiel Fotograf)",
+      "copyrightlink": "javascript:void(0)",
+      "title": ""
+    }
+  ],
+  "tooltips": {}
+}

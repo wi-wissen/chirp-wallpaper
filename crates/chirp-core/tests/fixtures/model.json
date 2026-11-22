@@ -1,0 +1,15 @@
+{
+  "MediaContents": [
+    {
+      "Ssd": "20261122",
+      "FullDateString": "22. Nov. 2026",
+      "ImageContent": {
+        "Description": "Ein Beispieltext, wie Bing ihn zu jedem Bild liefert: ein Absatz über den Ort, seine Geschichte und Besonderheiten.",
+        "Headline": "Möwen über den Hügeln",
+        "Title": "Hügel bei Sonnenaufgang, Beispielland",
+        "Copyright": "© Beispiel Fotografin/Beispiel Agentur",
+        "QuickFact": { "MainText": "", "LinkUrl": "", "LinkText": "" }
+      }
+    }
+  ]
+}

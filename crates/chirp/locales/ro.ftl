@@ -1,0 +1,24 @@
+# Chirp Wallpaper — Română (traducere inițială, de revizuit)
+updated = Imagine nouă setată: { $title }
+already-current = Imaginea este actualizată: { $title }
+unchanged = Nu s-a putut încărca o imagine nouă ({ $reason }). Imaginea actuală rămâne.
+unchanged-kept = Încă pe ecran: { $title } din { $date }.
+paused = Schimbarea imaginii este întreruptă până la { $date }.
+warning-desktop = Fundalul desktopului nu a putut fi schimbat: { $reason }
+warning-lockscreen = Ecranul de blocare nu a putut fi schimbat: { $reason }
+status-heading = Imaginea actuală
+label-date = Data
+label-region = Regiune
+label-copyright = Drepturi de autor
+label-more = Află mai multe
+label-last-success = Ultima actualizare
+label-last-error = Ultima eroare
+label-baseline = Imagine de bază
+none = niciuna
+seal-done = Imagine de bază salvată: { $title } ({ $date })
+install-done = Schimbarea automată a imaginii este configurată.
+uninstall-done = Schimbarea automată a imaginii a fost eliminată.
+config-saved = Setări salvate: { $file }
+needs-admin = Sunt necesare drepturi de administrator. Rulați din nou ca administrator.
+not-supported = Nu este disponibil pe acest sistem.
+error = Eroare: { $reason }

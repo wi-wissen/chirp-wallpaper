@@ -1,0 +1,24 @@
+# Chirp Wallpaper — Українська (початковий переклад, потребує перевірки)
+updated = Встановлено нове зображення: { $title }
+already-current = Зображення актуальне: { $title }
+unchanged = Не вдалося завантажити нове зображення ({ $reason }). Поточне зображення залишається.
+unchanged-kept = Досі на екрані: { $title } від { $date }.
+paused = Зміну зображення призупинено до { $date }.
+warning-desktop = Не вдалося змінити фон робочого столу: { $reason }
+warning-lockscreen = Не вдалося змінити екран блокування: { $reason }
+status-heading = Поточне зображення
+label-date = Дата
+label-region = Регіон
+label-copyright = Авторські права
+label-more = Докладніше
+label-last-success = Останнє оновлення
+label-last-error = Остання помилка
+label-baseline = Базове зображення
+none = немає
+seal-done = Базове зображення збережено: { $title } ({ $date })
+install-done = Автоматичну зміну зображення налаштовано.
+uninstall-done = Автоматичну зміну зображення вимкнено.
+config-saved = Налаштування збережено: { $file }
+needs-admin = Потрібні права адміністратора. Запустіть ще раз від імені адміністратора.
+not-supported = Недоступно в цій системі.
+error = Помилка: { $reason }

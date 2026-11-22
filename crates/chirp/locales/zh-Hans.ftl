@@ -1,0 +1,24 @@
+# Chirp Wallpaper — 简体中文（初始翻译，待校对）
+updated = 已设置新图片：{ $title }
+already-current = 图片已是最新：{ $title }
+unchanged = 无法加载新图片（{ $reason }）。保留当前图片。
+unchanged-kept = 仍在显示：{ $title }（{ $date }）
+paused = 图片更换已暂停至 { $date }。
+warning-desktop = 无法更改桌面背景：{ $reason }
+warning-lockscreen = 无法更改锁屏界面：{ $reason }
+status-heading = 当前图片
+label-date = 日期
+label-region = 地区
+label-copyright = 版权
+label-more = 了解更多
+label-last-success = 上次更新
+label-last-error = 上次错误
+label-baseline = 基础图片
+none = 无
+seal-done = 已保存基础图片：{ $title }（{ $date }）
+install-done = 已设置自动更换图片。
+uninstall-done = 已取消自动更换图片。
+config-saved = 设置已保存：{ $file }
+needs-admin = 需要管理员权限。请以管理员身份重新运行。
+not-supported = 此系统不支持该功能。
+error = 错误：{ $reason }

@@ -1,0 +1,24 @@
+# Chirp Wallpaper — Čeština (první překlad, ke kontrole)
+updated = Nastaven nový obrázek: { $title }
+already-current = Obrázek je aktuální: { $title }
+unchanged = Nový obrázek se nepodařilo načíst ({ $reason }). Současný obrázek zůstává.
+unchanged-kept = Stále zobrazeno: { $title } z { $date }.
+paused = Změna obrázku je pozastavena do { $date }.
+warning-desktop = Pozadí plochy se nepodařilo změnit: { $reason }
+warning-lockscreen = Zamykací obrazovku se nepodařilo změnit: { $reason }
+status-heading = Současný obrázek
+label-date = Datum
+label-region = Oblast
+label-copyright = Autorská práva
+label-more = Další informace
+label-last-success = Poslední aktualizace
+label-last-error = Poslední chyba
+label-baseline = Základní obrázek
+none = žádný
+seal-done = Základní obrázek uložen: { $title } ({ $date })
+install-done = Automatická změna obrázku je nastavena.
+uninstall-done = Automatická změna obrázku je odstraněna.
+config-saved = Nastavení uloženo: { $file }
+needs-admin = K tomu jsou potřeba práva správce. Spusťte to znovu jako správce.
+not-supported = V tomto systému není k dispozici.
+error = Chyba: { $reason }
