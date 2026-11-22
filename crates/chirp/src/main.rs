@@ -143,7 +143,19 @@ fn run_apply(l: &Localizer, paths: &Paths, machine: bool, quiet: bool) -> CmdRes
     }
     let market = cfg.resolved_market(system_locale().as_deref());
     let platform = platform::NativePlatform::new(machine);
-    let outcome = chirp_core::apply(&cfg, paths, &platform, &market).map_err(|e| e.to_string())?;
+    let outcome = chirp_core::apply(
+        &cfg,
+        paths,
+        &platform,
+        &market,
+        // Scheduled runs (--quiet) keep a picture chosen by hand until a new one appears.
+        if quiet {
+            chirp_core::Trigger::Automatic
+        } else {
+            chirp_core::Trigger::Manual
+        },
+    )
+    .map_err(|e| e.to_string())?;
     match outcome {
         Outcome::Updated { picture, warnings } | Outcome::AlreadyCurrent { picture, warnings }
             if !warnings.is_empty() =>

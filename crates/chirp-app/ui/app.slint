@@ -11,7 +11,6 @@ export global Tr {
     in property <string> nav-about: "About";
     in property <string> today-update: "Update now";
     in property <string> today-more: "Learn more";
-    in property <string> today-show-file: "Show file";
     in property <string> today-empty: "No picture yet.";
     in property <string> today-loading: "Loading today’s picture …";
     in property <string> today-updating: "Updating …";
@@ -60,8 +59,6 @@ export struct HistoryItem {
     thumb: image,
     title: string,
     date: string,
-    col: int,
-    row: int,
 }
 
 component NavItem inherits Rectangle {
@@ -223,7 +220,6 @@ export component AppWindow inherits Window {
 
     callback update-now();
     callback open-info();
-    callback show-file();
     callback use-history(int);
     callback open-history(int);
     callback display-changed();
@@ -298,7 +294,9 @@ export component AppWindow inherits Window {
         Rectangle {
             horizontal-stretch: 1;
 
-            // Today
+            // Today: picture on top, text and buttons below. Nothing sits side
+            // by side with the picture, so wide fonts or high scaling cannot push
+            // anything out of the window.
             if root.page == 0: sv0 := ScrollView {
                 content-width: self.visible-width;
                 content-height: today.preferred-height;
@@ -306,7 +304,7 @@ export component AppWindow inherits Window {
                     width: sv0.visible-width;
                     padding: 32px;
                     padding-top: 24px;
-                    spacing: 16px;
+                    spacing: 14px;
                     Text {
                         text: Tr.nav-today;
                         font-size: 28px;
@@ -314,11 +312,11 @@ export component AppWindow inherits Window {
                         color: Palette.foreground;
                     }
                     HorizontalLayout {
-                        spacing: 24px;
-                        // Monitor-like frame, as in the mockup
+                        alignment: start;
+                        // Monitor-like frame, as in the mockup, at most 720 px wide
                         Rectangle {
-                            width: 368px;
-                            height: 211px;
+                            width: min(sv0.visible-width - 64px, 720px);
+                            height: self.width * 9 / 16;
                             border-radius: 10px;
                             background: Palette.color-scheme == ColorScheme.dark ? #3a3a3a : #1b1b1b;
                             Rectangle {
@@ -349,6 +347,7 @@ export component AppWindow inherits Window {
                                     Text {
                                         text: Tr.today-loading;
                                         horizontal-alignment: center;
+                                        wrap: word-wrap;
                                         color: Palette.foreground.transparentize(0.35);
                                     }
                                 }
@@ -362,58 +361,70 @@ export component AppWindow inherits Window {
                                 }
                             }
                         }
-                        VerticalLayout {
-                            alignment: end;
-                            spacing: 4px;
-                            horizontal-stretch: 1;
-                            Text {
-                                text: root.pic-meta;
-                                font-size: 12px;
-                                color: Palette.foreground.transparentize(0.35);
+                    }
+                    VerticalLayout {
+                        spacing: 4px;
+                        if root.pic-meta != "": Text {
+                            text: root.pic-meta;
+                            font-size: 12px;
+                            wrap: word-wrap;
+                            color: Palette.foreground.transparentize(0.35);
+                        }
+                        if root.pic-title != "": SelectableText {
+                            text: root.pic-title;
+                            font-size: 22px;
+                            font-weight: 600;
+                        }
+                        if root.pic-caption != "": SelectableText {
+                            text: root.pic-caption;
+                        }
+                        if root.pic-copyright != "": SelectableText {
+                            text: root.pic-copyright;
+                            font-size: 12px;
+                            color: Palette.foreground.transparentize(0.35);
+                        }
+                    }
+                    // Buttons side by side, or below each other when space is short.
+                    if sv0.visible-width - 64px >= 420px: HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
+                        Button {
+                            text: root.busy ? Tr.today-updating : Tr.today-update;
+                            icon: @image-url("icons/arrow_sync.svg");
+                            colorize-icon: true;
+                            primary: true;
+                            enabled: !root.busy;
+                            clicked => {
+                                root.update-now();
                             }
-                            SelectableText {
-                                text: root.pic-title;
-                                font-size: 22px;
-                                font-weight: 600;
+                        }
+                        if root.has-info-url: Button {
+                            text: Tr.today-more;
+                            icon: @image-url("icons/open.svg");
+                            colorize-icon: true;
+                            clicked => {
+                                root.open-info();
                             }
-                            if root.pic-caption != "": SelectableText {
-                                text: root.pic-caption;
+                        }
+                    }
+                    if sv0.visible-width - 64px < 420px: VerticalLayout {
+                        spacing: 8px;
+                        Button {
+                            text: root.busy ? Tr.today-updating : Tr.today-update;
+                            icon: @image-url("icons/arrow_sync.svg");
+                            colorize-icon: true;
+                            primary: true;
+                            enabled: !root.busy;
+                            clicked => {
+                                root.update-now();
                             }
-                            if root.pic-copyright != "": SelectableText {
-                                text: root.pic-copyright;
-                                font-size: 12px;
-                                color: Palette.foreground.transparentize(0.35);
-                            }
-                            HorizontalLayout {
-                                padding-top: 10px;
-                                spacing: 8px;
-                                alignment: start;
-                                Button {
-                                    text: root.busy ? Tr.today-updating : Tr.today-update;
-                                    icon: @image-url("icons/arrow_sync.svg");
-                                    colorize-icon: true;
-                                    primary: true;
-                                    enabled: !root.busy;
-                                    clicked => {
-                                        root.update-now();
-                                    }
-                                }
-                                if root.has-info-url: Button {
-                                    text: Tr.today-more;
-                                    icon: @image-url("icons/open.svg");
-                                    colorize-icon: true;
-                                    clicked => {
-                                        root.open-info();
-                                    }
-                                }
-                                if root.has-picture: Button {
-                                    text: Tr.today-show-file;
-                                    icon: @image-url("icons/folder_open.svg");
-                                    colorize-icon: true;
-                                    clicked => {
-                                        root.show-file();
-                                    }
-                                }
+                        }
+                        if root.has-info-url: Button {
+                            text: Tr.today-more;
+                            icon: @image-url("icons/open.svg");
+                            colorize-icon: true;
+                            clicked => {
+                                root.open-info();
                             }
                         }
                     }
@@ -447,8 +458,12 @@ export component AppWindow inherits Window {
             // History
             if root.page == 1: Rectangle {
                 property <length> gap: 12px;
-                property <length> tile-w: (self.width - 64px - 2 * gap) / 3;
-                property <length> tile-h: tile-w * 9 / 16 + 96px;
+                property <length> avail: self.width - 64px;
+                // Three columns when there is room, otherwise two or one.
+                property <int> cols: avail >= 720px ? 3 : avail >= 420px ? 2 : 1;
+                property <length> tile-w: (avail - (cols - 1) * gap) / cols;
+                property <length> info-h: 108px;
+                property <length> tile-h: tile-w * 9 / 16 + info-h;
                 VerticalLayout {
                     padding: 32px;
                     padding-top: 24px;
@@ -464,10 +479,10 @@ export component AppWindow inherits Window {
                         color: Palette.foreground.transparentize(0.35);
                     }
                     Flickable {
-                        content-height: (Math.ceil(root.history.length / 3) * (tile-h + gap));
+                        content-height: (Math.ceil(root.history.length / cols) * (tile-h + gap));
                         for item[i] in root.history: Card {
-                            x: item.col * (tile-w + gap);
-                            y: item.row * (tile-h + gap);
+                            x: Math.mod(i, cols) * (tile-w + gap);
+                            y: Math.floor(i / cols) * (tile-h + gap);
                             width: tile-w;
                             height: tile-h;
                             clip: true;
@@ -481,7 +496,8 @@ export component AppWindow inherits Window {
                             }
                             VerticalLayout {
                                 y: parent.width * 9 / 16;
-                                height: 96px;
+                                height: info-h;
+                                alignment: start;
                                 padding: 12px;
                                 padding-top: 8px;
                                 spacing: 6px;
@@ -507,10 +523,11 @@ export component AppWindow inherits Window {
                                             root.use-history(i);
                                         }
                                     }
+                                    // Icon only, so two buttons always fit; the name is in the tooltip text for screen readers.
                                     Button {
-                                        text: Tr.history-open;
                                         icon: @image-url("icons/open.svg");
                                         colorize-icon: true;
+                                        accessible-label: Tr.history-open;
                                         clicked => {
                                             root.open-history(i);
                                         }

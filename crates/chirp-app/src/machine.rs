@@ -19,7 +19,13 @@ pub fn apply_machine() -> i32 {
     };
     cfg.desktop = false;
     let market = cfg.resolved_market(sys_locale::get_locale().as_deref());
-    match chirp_core::apply(&cfg, &paths, &NativePlatform::new(true), &market) {
+    match chirp_core::apply(
+        &cfg,
+        &paths,
+        &NativePlatform::new(true),
+        &market,
+        chirp_core::Trigger::Automatic,
+    ) {
         Ok(chirp_core::Outcome::Unchanged { .. }) => 2,
         Ok(_) => 0,
         Err(_) => 1,
@@ -78,7 +84,13 @@ fn setup(market: Option<String>, resolution: Option<String>) -> Result<(), Strin
     let mut run_cfg = cfg.clone();
     run_cfg.desktop = false;
     let market = run_cfg.resolved_market(sys_locale::get_locale().as_deref());
-    let _ = chirp_core::apply(&run_cfg, &paths, &NativePlatform::new(true), &market);
+    let _ = chirp_core::apply(
+        &run_cfg,
+        &paths,
+        &NativePlatform::new(true),
+        &market,
+        chirp_core::Trigger::Manual,
+    );
     let _ = seal(&paths);
     Ok(())
 }

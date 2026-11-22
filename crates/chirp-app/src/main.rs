@@ -87,6 +87,17 @@ fn run(background: bool) -> Result<(), slint::PlatformError> {
     {
         ui.set_page(page);
     }
+    // CHIRP_WINDOW=760x520 opens the window at that size (layout tests).
+    if let Some((w, h)) = std::env::var("CHIRP_WINDOW")
+        .ok()
+        .and_then(|v| {
+            v.split_once('x')
+                .map(|(w, h)| (w.parse::<f32>(), h.parse::<f32>()))
+        })
+        .and_then(|(w, h)| Some((w.ok()?, h.ok()?)))
+    {
+        ui.window().set_size(slint::LogicalSize::new(w, h));
+    }
     if std::env::var_os("CHIRP_CONFIRM").is_some() {
         ui.set_confirm_admin(true);
     }
@@ -162,7 +173,6 @@ fn fill_texts(ui: &AppWindow, l: &Localizer) {
         set_nav_about => "nav-about",
         set_today_update => "today-update",
         set_today_more => "label-more",
-        set_today_show_file => "today-show-file",
         set_today_empty => "today-empty",
         set_history_empty => "history-empty",
         set_history_use => "history-use",
@@ -316,12 +326,6 @@ fn save_settings(ui: &AppWindow) {
 fn connect(ui: &AppWindow, l: Rc<Localizer>) {
     ui.on_update_now(|| update(true));
     ui.on_open_info(open_info);
-    ui.on_show_file(|| {
-        let file = SNAPSHOT.with(|s| s.borrow().current_file.clone());
-        if let Some(file) = file {
-            platform::show_in_folder(&file);
-        }
-    });
     {
         let l = l.clone();
         ui.on_use_history(move |index| use_history(&l, index as usize));
@@ -444,16 +448,13 @@ fn show_snapshot(l: &Localizer, data: model::Loaded) {
         let items: Vec<HistoryItem> = data
             .history
             .iter()
-            .enumerate()
-            .map(|(i, (c, thumb))| HistoryItem {
+            .map(|(c, thumb)| HistoryItem {
                 thumb: thumb
                     .clone()
                     .map(slint::Image::from_rgb8)
                     .unwrap_or_default(),
                 title: c.picture.title.clone().into(),
                 date: c.picture.date.clone().into(),
-                col: (i % 3) as i32,
-                row: (i / 3) as i32,
             })
             .collect();
         ui.set_history(ModelRc::new(VecModel::from(items)));
@@ -464,7 +465,6 @@ fn show_snapshot(l: &Localizer, data: model::Loaded) {
         SNAPSHOT.with(|s| {
             *s.borrow_mut() = Snapshot {
                 current: state.current.clone(),
-                current_file: state.current_file.clone(),
                 history: data.history.into_iter().map(|(c, _)| c).collect(),
             }
         });
@@ -485,7 +485,17 @@ pub fn update(manual: bool) {
     let cfg = effective_config();
     let market = cfg.resolved_market(sys_locale::get_locale().as_deref());
     std::thread::spawn(move || {
-        let outcome = chirp_core::apply(&cfg, &paths, &NativePlatform::new(false), &market);
+        let outcome = chirp_core::apply(
+            &cfg,
+            &paths,
+            &NativePlatform::new(false),
+            &market,
+            if manual {
+                chirp_core::Trigger::Manual
+            } else {
+                chirp_core::Trigger::Automatic
+            },
+        );
         let _ = slint::invoke_from_event_loop(move || {
             let l = Rc::new(Localizer::new(None));
             with_window(|ui| ui.set_busy(false));
@@ -520,10 +530,6 @@ fn use_history(l: &Rc<Localizer>, index: usize) {
     let cfg = effective_config();
     match chirp_core::use_cached(&cfg, &paths, &NativePlatform::new(false), &item) {
         Ok(_) => {
-            // Keep the chosen picture for a week instead of replacing it tomorrow.
-            let mut user = user_config();
-            user.paused_until = model::pause_until(2, &chirp_core::today());
-            let _ = user.save(&paths.config_file);
             toast(&l.t("history-used", &[("title", &item.picture.title)]));
         }
         Err(e) => toast(&l.t("error", &[("reason", &e.to_string())])),

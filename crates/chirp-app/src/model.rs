@@ -3,12 +3,11 @@
 use chirp_core::{history, CachedPicture, Paths, Picture, State};
 pub use chirp_native::ui::*;
 use slint::{Rgb8Pixel, SharedPixelBuffer};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[derive(Default)]
 pub struct Snapshot {
     pub current: Option<Picture>,
-    pub current_file: Option<PathBuf>,
     pub history: Vec<CachedPicture>,
 }
 

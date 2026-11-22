@@ -12,6 +12,9 @@ pub struct State {
     pub current: Option<Picture>,
     /// Its file on disk.
     pub current_file: Option<PathBuf>,
+    /// The newest picture of the day that was set. Automatic checks only
+    /// change the screen when a different one appears.
+    pub daily_id: Option<String>,
     /// Time of the last attempt (RFC 3339).
     pub last_attempt: Option<String>,
     /// Time of the last successful update (RFC 3339).

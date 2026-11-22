@@ -1,8 +1,10 @@
 //! Writing the picture's title and copyright into the picture itself, so
 //! the desktop shows what it is without opening the app.
 //!
-//! The text sits on a translucent dark box in one corner. Sizes follow the
-//! picture height, and the bottom margin leaves room for the taskbar.
+//! The text sits on a small translucent box close to one corner, like a
+//! photo credit. Sizes follow the picture height (measured in 1080 units, so
+//! they match the normal Windows text size on a Full HD screen), and the
+//! bottom margin leaves just enough room for the taskbar.
 
 use crate::config::Corner;
 use crate::picture::Picture;
@@ -24,7 +26,7 @@ pub fn render(src: &Path, dst: &Path, picture: &Picture, corner: Corner) -> Resu
     let (w, h) = img.dimensions();
     let unit = h as f32 / 1080.0;
 
-    let mut lines: Vec<(&FontRef, f32, String)> = vec![(&bold, 30.0 * unit, picture.title.clone())];
+    let mut lines: Vec<(&FontRef, f32, String)> = vec![(&bold, 15.0 * unit, picture.title.clone())];
     let mut second = Vec::new();
     if !picture.caption.is_empty() && picture.caption != picture.title {
         second.push(picture.caption.clone());
@@ -33,12 +35,13 @@ pub fn render(src: &Path, dst: &Path, picture: &Picture, corner: Corner) -> Resu
         second.push(picture.copyright.clone());
     }
     if !second.is_empty() {
-        lines.push((&regular, 19.0 * unit, second.join("  ·  ")));
+        lines.push((&regular, 12.0 * unit, second.join("  ·  ")));
     }
 
-    let pad = 18.0 * unit;
-    let gap = 6.0 * unit;
-    let max_text = w as f32 * 0.45;
+    let pad_x = 10.0 * unit;
+    let pad_y = 7.0 * unit;
+    let gap = 2.0 * unit;
+    let max_text = w as f32 * 0.4;
     let lines: Vec<_> = lines
         .into_iter()
         .map(|(f, size, text)| {
@@ -47,14 +50,14 @@ pub fn render(src: &Path, dst: &Path, picture: &Picture, corner: Corner) -> Resu
             (f, size, text, width)
         })
         .collect();
-    let box_w = lines.iter().map(|l| l.3).fold(0.0, f32::max) + 2.0 * pad;
+    let box_w = lines.iter().map(|l| l.3).fold(0.0, f32::max) + 2.0 * pad_x;
     let box_h = lines.iter().map(|l| l.1 * 1.25).sum::<f32>()
         + gap * (lines.len() as f32 - 1.0)
-        + 2.0 * pad;
+        + 2.0 * pad_y;
 
-    let margin_x = 40.0 * unit;
-    let margin_top = 40.0 * unit;
-    let margin_bottom = 90.0 * unit; // clear of the taskbar
+    let margin_x = 16.0 * unit;
+    let margin_top = 16.0 * unit;
+    let margin_bottom = 58.0 * unit; // just above a 48 px taskbar
     let x0 = match corner {
         Corner::BottomLeft | Corner::TopLeft => margin_x,
         Corner::BottomRight | Corner::TopRight => w as f32 - margin_x - box_w,
@@ -64,10 +67,10 @@ pub fn render(src: &Path, dst: &Path, picture: &Picture, corner: Corner) -> Resu
         Corner::BottomLeft | Corner::BottomRight => h as f32 - margin_bottom - box_h,
     };
 
-    shade(&mut img, x0, y0, box_w, box_h, 12.0 * unit, 0.55);
-    let mut y = y0 + pad;
+    shade(&mut img, x0, y0, box_w, box_h, 6.0 * unit, 0.45);
+    let mut y = y0 + pad_y;
     for (font, size, text, _) in &lines {
-        draw_text(&mut img, font, *size, text, x0 + pad, y);
+        draw_text(&mut img, font, *size, text, x0 + pad_x, y);
         y += size * 1.25 + gap;
     }
 
@@ -205,7 +208,7 @@ mod tests {
         assert_eq!(out.dimensions(), (1920, 1080));
         // Top left stays untouched, the bottom right corner got the dark box.
         assert!(out.get_pixel(10, 10)[0] > 190);
-        let p = out.get_pixel(1920 - 60, 1080 - 110);
+        let p = out.get_pixel(1920 - 30, 1080 - 70);
         assert!(p[0] < 140, "expected shade, got {p:?}");
         std::fs::remove_dir_all(dir).unwrap();
     }

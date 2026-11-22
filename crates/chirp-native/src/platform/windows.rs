@@ -45,9 +45,17 @@ impl Platform for NativePlatform {
         {
             let _ = desk.set_value("JPEGImportQuality", &100u32);
         }
-        // IDesktopWallpaper knows placement and single monitors; the classic
-        // call is the fallback for systems where it is not available.
-        set_with_desktop_wallpaper(image, layout).or_else(|_| set_classic(image, layout))
+        // IDesktopWallpaper knows placement and single screens. The classic
+        // call is only a fallback when all screens get the picture anyway;
+        // for "main screen only" an error is reported instead of silently
+        // changing every screen.
+        match set_with_desktop_wallpaper(image, layout) {
+            Ok(()) => Ok(()),
+            Err(e) if layout.screens == Screens::Primary && layout.fit != Fit::Span => {
+                Err(Error::Platform(e.message().to_string()))
+            }
+            Err(_) => set_classic(image, layout),
+        }
     }
 
     fn set_lockscreen(&self, image: &Path) -> Result<()> {
@@ -81,27 +89,116 @@ fn set_with_desktop_wallpaper(image: &Path, layout: &Layout) -> windows::core::R
             Fit::Center => DWPOS_CENTER,
             Fit::Span => DWPOS_SPAN,
         };
-        wallpaper.SetPosition(position)?;
         let path = HSTRING::from(image.as_os_str());
         if layout.screens == Screens::All || layout.fit == Fit::Span {
+            wallpaper.SetPosition(position)?;
             return wallpaper.SetWallpaper(PCWSTR::null(), &path);
         }
-        // Only the main screen: the monitor whose area starts at (0, 0).
+
+        // Only the main screen. Windows has one background type for all
+        // screens: as soon as one screen gets a picture, the others get it
+        // too unless they are given their own. So first note what each other
+        // screen shows now (its picture, or the solid colour), then set ours,
+        // then give the others back what they had.
+        let solid_colour = current_background_is_colour();
         let count = wallpaper.GetMonitorDevicePathCount()?;
+        let mut primary_id = None;
+        let mut others = Vec::new();
         for i in 0..count {
             let id = wallpaper.GetMonitorDevicePathAt(i)?;
-            let rect = wallpaper.GetMonitorRECT(PCWSTR(id.0));
-            let primary = rect.is_ok_and(|r| r.left == 0 && r.top == 0);
-            let result = if primary {
-                wallpaper.SetWallpaper(PCWSTR(id.0), &path)
+            let id_text = id.to_string().unwrap_or_default();
+            let is_primary = wallpaper
+                .GetMonitorRECT(PCWSTR(id.0))
+                .is_ok_and(|r| r.left == 0 && r.top == 0);
+            if is_primary {
+                primary_id = Some(id_text);
             } else {
-                Ok(())
-            };
+                let keep = if solid_colour {
+                    None
+                } else {
+                    wallpaper.GetWallpaper(PCWSTR(id.0)).ok().and_then(|p| {
+                        let text = p.to_string().unwrap_or_default();
+                        CoTaskMemFree(Some(p.0 as *const core::ffi::c_void));
+                        (!text.is_empty() && Path::new(&text).is_file()).then_some(text)
+                    })
+                };
+                others.push((id_text, keep));
+            }
             CoTaskMemFree(Some(id.0 as *const core::ffi::c_void));
-            result?;
+        }
+        let Some(primary_id) = primary_id else {
+            return Err(windows::core::Error::new(
+                windows::Win32::Foundation::E_FAIL,
+                "main screen not found",
+            ));
+        };
+
+        wallpaper.SetPosition(position)?;
+        wallpaper.SetWallpaper(&HSTRING::from(primary_id.as_str()), &path)?;
+        for (id, keep) in others {
+            let picture = match keep {
+                Some(p) => p,
+                None => {
+                    // The other screen showed a solid colour: give it a picture of that colour.
+                    let colour = wallpaper.GetBackgroundColor().map(|c| c.0).unwrap_or(0);
+                    match colour_picture(colour) {
+                        Some(p) => p.to_string_lossy().to_string(),
+                        None => continue,
+                    }
+                }
+            };
+            wallpaper.SetWallpaper(
+                &HSTRING::from(id.as_str()),
+                &HSTRING::from(picture.as_str()),
+            )?;
         }
         Ok(())
     }
+}
+
+/// Whether "Background: Solid colour" is selected in the Windows settings.
+fn current_background_is_colour() -> bool {
+    RegKey::predef(HKEY_CURRENT_USER)
+        .open_subkey(r"Control Panel\Desktop")
+        .and_then(|k| k.get_value::<String, _>("WallPaper"))
+        .map(|v| v.trim().is_empty())
+        .unwrap_or(false)
+}
+
+/// A small picture filled with a COLORREF (0x00BBGGRR) colour, kept in the app's folder.
+fn colour_picture(colorref: u32) -> Option<PathBuf> {
+    let r = (colorref & 0xFF) as u8;
+    let g = ((colorref >> 8) & 0xFF) as u8;
+    let b = ((colorref >> 16) & 0xFF) as u8;
+    let dir = chirp_core::Paths::user().data_dir;
+    std::fs::create_dir_all(&dir).ok()?;
+    let file = dir.join(format!("colour-{r:02x}{g:02x}{b:02x}.bmp"));
+    if !file.is_file() {
+        std::fs::write(&file, bmp(r, g, b)).ok()?;
+    }
+    Some(file)
+}
+
+/// An 8×8 24-bit BMP of one colour (no image library needed).
+fn bmp(r: u8, g: u8, b: u8) -> Vec<u8> {
+    const SIDE: u32 = 8;
+    let row = SIDE * 3; // already a multiple of 4
+    let size = 54 + row * SIDE;
+    let mut out = Vec::with_capacity(size as usize);
+    out.extend_from_slice(b"BM");
+    out.extend_from_slice(&size.to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes());
+    out.extend_from_slice(&54u32.to_le_bytes());
+    out.extend_from_slice(&40u32.to_le_bytes());
+    out.extend_from_slice(&(SIDE as i32).to_le_bytes());
+    out.extend_from_slice(&(SIDE as i32).to_le_bytes());
+    out.extend_from_slice(&1u16.to_le_bytes());
+    out.extend_from_slice(&24u16.to_le_bytes());
+    out.extend_from_slice(&[0u8; 24]);
+    for _ in 0..SIDE * SIDE {
+        out.extend_from_slice(&[b, g, r]);
+    }
+    out
 }
 
 fn set_classic(image: &Path, layout: &Layout) -> Result<()> {

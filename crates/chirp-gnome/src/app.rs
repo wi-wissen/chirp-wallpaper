@@ -207,7 +207,6 @@ pub struct Ui {
     baseline: gtk::Label,
     update_button: gtk::Button,
     more_button: gtk::Button,
-    file_button: gtk::Button,
     history: gtk::FlowBox,
     history_empty: gtk::Label,
     autostart: adw::SwitchRow,
@@ -296,12 +295,8 @@ impl Ui {
             .label(l.t("label-more", &[]))
             .css_classes(["pill"])
             .build();
-        let file_button = gtk::Button::builder()
-            .label(l.t("today-show-file", &[]))
-            .css_classes(["pill"])
-            .build();
         let buttons = gtk::Box::new(gtk::Orientation::Horizontal, 8);
-        for b in [&update_button, &more_button, &file_button] {
+        for b in [&update_button, &more_button] {
             buttons.append(b);
         }
         let today = gtk::Box::builder()
@@ -495,7 +490,6 @@ impl Ui {
             baseline,
             update_button,
             more_button,
-            file_button,
             history,
             history_empty,
             autostart,
@@ -555,18 +549,6 @@ impl Ui {
                     .and_then(|p| p.info_url.clone())
                 {
                     gtk::UriLauncher::new(&url).launch(
-                        Some(&ui.window),
-                        gio::Cancellable::NONE,
-                        |_| {},
-                    );
-                }
-            });
-        }
-        {
-            let ui = self.clone();
-            self.file_button.connect_clicked(move |_| {
-                if let Some(f) = ui.current_file.borrow().as_ref() {
-                    gtk::FileLauncher::new(Some(&gio::File::for_path(f))).open_containing_folder(
                         Some(&ui.window),
                         gio::Cancellable::NONE,
                         |_| {},
@@ -746,7 +728,6 @@ impl Ui {
         ] {
             w.set_visible(!w.text().is_empty());
         }
-        self.file_button.set_visible(has);
         self.picture.set_visible(data.picture.is_some());
         self.spinner_box
             .set_visible(*self.busy.borrow() && data.picture.is_none());
@@ -874,9 +855,6 @@ impl Ui {
         let cfg = effective_config();
         match chirp_core::use_cached(&cfg, &paths(), native_platform().as_ref(), &item) {
             Ok(_) => {
-                let mut user = user_config();
-                user.paused_until = ui::pause_until(2, &chirp_core::today());
-                let _ = user.save(&paths().config_file);
                 self.toast(&self.l.t("history-used", &[("title", &item.picture.title)]));
             }
             Err(e) => self.toast(&self.l.t("error", &[("reason", &e.to_string())])),
@@ -900,11 +878,21 @@ impl Ui {
         }
         let ui = self.clone();
         glib::spawn_future_local(async move {
-            let result = gio::spawn_blocking(|| {
+            let result = gio::spawn_blocking(move || {
                 let cfg = effective_config();
                 let market = cfg.resolved_market(sys_locale::get_locale().as_deref());
-                chirp_core::apply(&cfg, &paths(), native_platform().as_ref(), &market)
-                    .map_err(|e| e.to_string())
+                chirp_core::apply(
+                    &cfg,
+                    &paths(),
+                    native_platform().as_ref(),
+                    &market,
+                    if manual {
+                        chirp_core::Trigger::Manual
+                    } else {
+                        chirp_core::Trigger::Automatic
+                    },
+                )
+                .map_err(|e| e.to_string())
             })
             .await;
             *ui.busy.borrow_mut() = false;

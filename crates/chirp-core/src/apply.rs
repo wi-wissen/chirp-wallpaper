@@ -51,12 +51,23 @@ pub type FetchFn<'a> = &'a dyn Fn(&str, Resolution) -> Result<Picture>;
 /// Download function: `(url, destination file)`.
 pub type DownloadFn<'a> = &'a dyn Fn(&str, &Path) -> Result<()>;
 
+/// How an update was started.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Trigger {
+    /// Hourly or start-up check: only a new picture of the day changes the
+    /// screen, so a picture the user chose from the history stays.
+    Automatic,
+    /// "Update now": set today's picture in any case.
+    Manual,
+}
+
 /// Run one update with Bing and real downloads.
 pub fn apply(
     cfg: &Config,
     paths: &Paths,
     platform: &dyn Platform,
     market: &str,
+    trigger: Trigger,
 ) -> Result<Outcome> {
     let agent = crate::bing::agent();
     let download = |url: &str, dest: &Path| -> Result<()> {
@@ -69,18 +80,21 @@ pub fn apply(
         platform,
         market,
         &crate::today(),
+        trigger,
         &crate::bing::fetch_latest,
         &download,
     )
 }
 
 /// Run one update with injected network functions (used by tests).
+#[allow(clippy::too_many_arguments)]
 pub fn apply_with(
     cfg: &Config,
     paths: &Paths,
     platform: &dyn Platform,
     market: &str,
     today: &str,
+    trigger: Trigger,
     fetch: FetchFn,
     download: DownloadFn,
 ) -> Result<Outcome> {
@@ -99,6 +113,20 @@ pub fn apply_with(
         Err(e) => return unchanged(cfg, paths, platform, &mut state, e),
     };
 
+    // This picture of the day was set before: an automatic check leaves the
+    // screen alone (the user may have chosen another one from the history).
+    let seen = state.daily_id.as_deref() == Some(picture.id.as_str())
+        && state.current_file.as_deref().is_some_and(is_usable);
+    if trigger == Trigger::Automatic && seen {
+        state.last_success = state.last_attempt.clone();
+        state.last_error = None;
+        state.save(&paths.state_file())?;
+        let shown = state.current.clone().unwrap_or(picture);
+        return Ok(Outcome::AlreadyCurrent {
+            picture: shown,
+            warnings: Vec::new(),
+        });
+    }
     let already = state.current.as_ref().is_some_and(|c| c.id == picture.id);
     let file = match ensure_image(paths, &picture, download) {
         Ok(f) => f,
@@ -118,6 +146,7 @@ pub fn apply_with(
 
     state.current = Some(picture.clone());
     state.current_file = Some(file.clone());
+    state.daily_id = Some(picture.id.clone());
     state.last_success = state.last_attempt.clone();
     state.last_error = None;
     state.save(&paths.state_file())?;
@@ -180,6 +209,10 @@ fn fallback(paths: &Paths) -> Option<(Picture, PathBuf)> {
     baseline(paths)
 }
 
+/// Part of the file name of pictures with a caption; changed whenever the
+/// caption's look changes, so older renderings are not reused.
+const CAPTION_STYLE: &str = "caption2";
+
 /// The file to put on screen: the picture itself, or a copy with its title
 /// written into it when that is switched on (falls back to the picture).
 fn display_image(cfg: &Config, paths: &Paths, picture: &Picture, file: &Path) -> PathBuf {
@@ -192,9 +225,10 @@ fn display_image(cfg: &Config, paths: &Paths, picture: &Picture, file: &Path) ->
         crate::Corner::TopRight => "tr",
         crate::Corner::TopLeft => "tl",
     };
-    let out = paths
-        .images_dir()
-        .join(format!("{}.caption-{corner}.jpg", picture.file_stem()));
+    let out = paths.images_dir().join(format!(
+        "{}.{CAPTION_STYLE}-{corner}.jpg",
+        picture.file_stem()
+    ));
     if is_usable(&out) || crate::caption::render(file, &out, picture, cfg.caption_position).is_ok()
     {
         out
@@ -410,7 +444,7 @@ fn prune(paths: &Paths, keep_days: u32, current: &Path) {
             .unwrap_or_default();
         if !name.ends_with(".jpg")
             || name.ends_with(".thumb.jpg")
-            || name.contains(".caption-")
+            || name.contains(".caption")
             || path == current
         {
             continue;
@@ -425,8 +459,11 @@ fn prune(paths: &Paths, keep_days: u32, current: &Path) {
             let _ = std::fs::remove_file(&path);
             let _ = std::fs::remove_file(path.with_extension("json"));
             let _ = std::fs::remove_file(path.with_extension("thumb.jpg"));
-            for corner in ["br", "bl", "tr", "tl"] {
-                let _ = std::fs::remove_file(path.with_extension(format!("caption-{corner}.jpg")));
+            for style in ["caption", CAPTION_STYLE] {
+                for corner in ["br", "bl", "tr", "tl"] {
+                    let _ =
+                        std::fs::remove_file(path.with_extension(format!("{style}-{corner}.jpg")));
+                }
             }
         }
     }
@@ -556,6 +593,7 @@ mod tests {
             &platform,
             "de-DE",
             "2026-11-22",
+            Trigger::Manual,
             &fetch,
             &write_jpeg,
         )
@@ -574,6 +612,7 @@ mod tests {
             &platform,
             "de-DE",
             "2026-11-22",
+            Trigger::Manual,
             &fetch,
             &write_jpeg,
         )
@@ -594,6 +633,7 @@ mod tests {
             &platform,
             "de-DE",
             "2026-11-21",
+            Trigger::Manual,
             &ok,
             &write_jpeg,
         )
@@ -606,6 +646,7 @@ mod tests {
             &platform,
             "de-DE",
             "2026-11-22",
+            Trigger::Manual,
             &offline,
             &write_jpeg,
         )
@@ -641,6 +682,7 @@ mod tests {
             &FakePlatform::default(),
             "de-DE",
             "2026-11-22",
+            Trigger::Manual,
             &offline,
             &write_jpeg,
         )
@@ -677,6 +719,7 @@ mod tests {
             &platform,
             "de-DE",
             "2026-11-22",
+            Trigger::Manual,
             &offline,
             &write_jpeg,
         )
@@ -710,13 +753,14 @@ mod tests {
             &platform,
             "de-DE",
             "2026-11-22",
+            Trigger::Manual,
             &fetch,
             &real_jpeg,
         )
         .unwrap();
         let shown = platform.desktop.borrow()[0].clone();
         assert!(
-            shown.to_string_lossy().ends_with(".caption-br.jpg"),
+            shown.to_string_lossy().ends_with(".caption2-br.jpg"),
             "{shown:?}"
         );
         // The app keeps showing the original picture.
@@ -726,6 +770,86 @@ mod tests {
             .unwrap()
             .to_string_lossy()
             .ends_with("2026-11-22.jpg"));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn hourly_check_keeps_a_picture_chosen_from_history() {
+        let dir = temp("keepchoice");
+        let paths = Paths::in_dir(&dir);
+        let platform = FakePlatform::default();
+        for d in ["2026-11-21", "2026-11-22"] {
+            let fetch = move |_: &str, _: Resolution| Ok(sample(d));
+            apply_with(
+                &Config::default(),
+                &paths,
+                &platform,
+                "de-DE",
+                d,
+                Trigger::Automatic,
+                &fetch,
+                &write_jpeg,
+            )
+            .unwrap();
+        }
+        let older = history(&paths)
+            .into_iter()
+            .find(|c| c.picture.date == "2026-11-21")
+            .unwrap();
+        use_cached(&Config::default(), &paths, &platform, &older).unwrap();
+        let set_before = platform.desktop.borrow().len();
+
+        // Hourly check, same picture of the day: the chosen picture stays.
+        let today = |_: &str, _: Resolution| Ok(sample("2026-11-22"));
+        let out = apply_with(
+            &Config::default(),
+            &paths,
+            &platform,
+            "de-DE",
+            "2026-11-22",
+            Trigger::Automatic,
+            &today,
+            &write_jpeg,
+        )
+        .unwrap();
+        assert!(matches!(out, Outcome::AlreadyCurrent { .. }));
+        assert_eq!(platform.desktop.borrow().len(), set_before);
+        assert_eq!(
+            State::load(&paths.state_file()).current.unwrap().date,
+            "2026-11-21"
+        );
+
+        // "Update now" brings today's picture back.
+        apply_with(
+            &Config::default(),
+            &paths,
+            &platform,
+            "de-DE",
+            "2026-11-22",
+            Trigger::Manual,
+            &today,
+            &write_jpeg,
+        )
+        .unwrap();
+        assert_eq!(
+            State::load(&paths.state_file()).current.unwrap().date,
+            "2026-11-22"
+        );
+
+        // The next day's picture replaces the choice automatically.
+        let tomorrow = |_: &str, _: Resolution| Ok(sample("2026-11-23"));
+        let out = apply_with(
+            &Config::default(),
+            &paths,
+            &platform,
+            "de-DE",
+            "2026-11-23",
+            Trigger::Automatic,
+            &tomorrow,
+            &write_jpeg,
+        )
+        .unwrap();
+        assert!(matches!(out, Outcome::Updated { .. }));
         std::fs::remove_dir_all(dir).unwrap();
     }
 
@@ -748,6 +872,7 @@ mod tests {
             &FakePlatform::default(),
             "de-DE",
             "2026-11-22",
+            Trigger::Manual,
             &fetch,
             &dl,
         )
@@ -772,6 +897,7 @@ mod tests {
             &FakePlatform::default(),
             "de-DE",
             "2026-11-22",
+            Trigger::Manual,
             &fetch,
             &html,
         )
@@ -796,6 +922,7 @@ mod tests {
             &FakePlatform::default(),
             "de-DE",
             "2026-11-22",
+            Trigger::Manual,
             &fetch,
             &no_dl,
         )
@@ -819,6 +946,7 @@ mod tests {
             &platform,
             "de-DE",
             "2026-11-22",
+            Trigger::Manual,
             &fetch,
             &write_jpeg,
         )
@@ -845,6 +973,7 @@ mod tests {
             &FakePlatform::default(),
             "de-DE",
             "2026-11-22",
+            Trigger::Manual,
             &fetch,
             &write_jpeg,
         )
@@ -874,6 +1003,7 @@ mod tests {
                 &FakePlatform::default(),
                 "de-DE",
                 date,
+                Trigger::Manual,
                 &fetch,
                 &write_jpeg,
             )
@@ -905,6 +1035,7 @@ mod tests {
             &FakePlatform::default(),
             "de-DE",
             "2026-11-22",
+            Trigger::Manual,
             &fetch,
             &write_jpeg,
         )
