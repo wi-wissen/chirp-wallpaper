@@ -21,6 +21,50 @@ pub enum Resolution {
     FullHd,
 }
 
+/// How the picture fills the screen.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum Fit {
+    /// Cover the screen, cutting off what does not fit.
+    #[default]
+    Fill,
+    /// Show the whole picture, with bars if needed.
+    Fit,
+    /// Stretch to the screen size.
+    Stretch,
+    /// Original size in the middle.
+    Center,
+    /// One picture across all screens.
+    Span,
+}
+
+/// Which screens get the picture (Windows).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum Screens {
+    #[default]
+    All,
+    Primary,
+}
+
+/// Corner for the description written into the picture.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "kebab-case")]
+pub enum Corner {
+    #[default]
+    BottomRight,
+    BottomLeft,
+    TopRight,
+    TopLeft,
+}
+
+/// How the desktop picture is placed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Layout {
+    pub fit: Fit,
+    pub screens: Screens,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
@@ -36,6 +80,16 @@ pub struct Config {
     pub keep_days: u32,
     /// Do not change the picture until this day (`YYYY-MM-DD`), inclusive.
     pub paused_until: Option<String>,
+    /// How the picture fills the screen.
+    pub fit: Fit,
+    /// All screens or only the main screen.
+    pub screens: Screens,
+    /// Write title and copyright into the picture.
+    pub caption: bool,
+    /// Where to write them.
+    pub caption_position: Corner,
+    /// Keep a copy of every new picture in the Pictures folder.
+    pub save_copies: bool,
 }
 
 impl Default for Config {
@@ -47,6 +101,11 @@ impl Default for Config {
             lockscreen: true,
             keep_days: 14,
             paused_until: None,
+            fit: Fit::Fill,
+            screens: Screens::All,
+            caption: false,
+            caption_position: Corner::BottomRight,
+            save_copies: false,
         }
     }
 }
@@ -89,6 +148,14 @@ impl Config {
             markets::market_for_locale(system_locale.unwrap_or("")).to_string()
         } else {
             self.market.trim().to_string()
+        }
+    }
+
+    /// Placement of the desktop picture.
+    pub fn layout(&self) -> Layout {
+        Layout {
+            fit: self.fit,
+            screens: self.screens,
         }
     }
 
@@ -140,6 +207,26 @@ mod tests {
             ..Config::default()
         };
         assert_eq!(fixed.resolved_market(Some("de-DE")), "fr-FR");
+    }
+
+    #[test]
+    fn new_settings_round_trip() {
+        let dir = std::env::temp_dir().join(format!("chirp-cfg-rt-{}", std::process::id()));
+        let f = dir.join("c.toml");
+        let cfg = Config {
+            fit: Fit::Span,
+            screens: Screens::Primary,
+            caption: true,
+            caption_position: Corner::TopLeft,
+            save_copies: true,
+            ..Config::default()
+        };
+        cfg.save(&f).unwrap();
+        let text = std::fs::read_to_string(&f).unwrap();
+        assert!(text.contains("fit = \"span\""));
+        assert!(text.contains("caption_position = \"top-left\""));
+        assert_eq!(Config::load(&[&f]).unwrap(), cfg);
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]

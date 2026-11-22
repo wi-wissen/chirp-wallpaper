@@ -863,7 +863,9 @@ dependencies = [
 name = "chirp-core"
 version = "0.1.0"
 dependencies = [
+ "ab_glyph",
  "dirs 5.0.1",
+ "image",
  "serde",
  "serde_json",
  "thiserror 1.0.69",

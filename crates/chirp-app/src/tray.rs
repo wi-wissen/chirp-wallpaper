@@ -11,15 +11,23 @@ pub fn create(l: &Localizer) -> Option<TrayIcon> {
     let menu = Menu::new();
     let open = MenuItem::with_id("open", l.t("tray-open", &[]), true, None);
     let update = MenuItem::with_id("update", l.t("today-update", &[]), true, None);
+    let more = MenuItem::with_id("more", l.t("label-more", &[]), true, None);
     let quit = MenuItem::with_id("quit", l.t("tray-quit", &[]), true, None);
-    menu.append_items(&[&open, &update, &PredefinedMenuItem::separator(), &quit])
-        .ok()?;
+    menu.append_items(&[
+        &open,
+        &more,
+        &update,
+        &PredefinedMenuItem::separator(),
+        &quit,
+    ])
+    .ok()?;
 
     MenuEvent::set_event_handler(Some(|event: MenuEvent| {
         let id = event.id.0.clone();
         let _ = slint::invoke_from_event_loop(move || match id.as_str() {
             "open" => crate::show_window(),
             "update" => crate::update(true),
+            "more" => crate::open_info(),
             "quit" => {
                 let _ = slint::quit_event_loop();
             }

@@ -8,7 +8,7 @@
 
 use ashpd::desktop::background::Background;
 use ashpd::desktop::wallpaper::{SetOn, WallpaperRequest};
-use chirp_core::{Error, Platform, Result};
+use chirp_core::{Error, Layout, Platform, Result};
 use std::path::{Path, PathBuf};
 
 /// True when running inside a Flatpak sandbox.
@@ -19,7 +19,8 @@ pub fn in_flatpak() -> bool {
 pub struct PortalPlatform;
 
 impl Platform for PortalPlatform {
-    fn set_desktop(&self, image: &Path) -> Result<()> {
+    fn set_desktop(&self, image: &Path, _layout: &Layout) -> Result<()> {
+        // The portal has no option for placement; GNOME fills the screen.
         let file = std::fs::File::open(image)?;
         pollster::block_on(async {
             WallpaperRequest::default()

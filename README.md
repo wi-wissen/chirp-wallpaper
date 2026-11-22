@@ -29,8 +29,11 @@ Free, open source (MIT), one small program: no installation, no account, no admi
 Download `ChirpWallpaper.exe`, put it anywhere (e.g. a `Programs` folder in your profile) and double-click it.
 
 * **Today**: the picture, its story, *Update now*, *Learn more*, *Copy text*, *Show file*.
-* **History**: pictures of the last days; *Use* sets one and pauses automatic changes for a week.
-* **Settings**: start automatically, desktop and/or lock screen, picture region, 4K or Full HD, pause.
+* **History**: pictures of the last days; *Open* shows one in your picture viewer, *Use* sets it and pauses automatic changes for a week.
+* **Settings**: start automatically, desktop and/or lock screen, picture region, 4K or Full HD, pause,
+  fit (fill, fit, stretch, center, span), all screens or the main screen only, description written into the picture
+  (corner of your choice), keep a copy of every picture in `Pictures\Chirp Wallpaper`.
+* **Notification area**: open, *Learn more* about today's picture, update now, quit.
 * **Set up for all users** (needs administrator rights, asks via UAC): see below.
 
 **Starting with Windows:** turn on *Start automatically at sign-in* in the settings. The app then starts hidden

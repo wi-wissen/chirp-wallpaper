@@ -54,3 +54,40 @@ fn decode(file: &Path, max: u32) -> Option<SharedPixelBuffer<Rgb8Pixel>> {
         rgb.height(),
     ))
 }
+
+pub fn fit_index(fit: chirp_core::Fit) -> i32 {
+    use chirp_core::Fit::*;
+    match fit {
+        Fill => 0,
+        Fit => 1,
+        Stretch => 2,
+        Center => 3,
+        Span => 4,
+    }
+}
+
+pub fn fit_from(index: i32) -> chirp_core::Fit {
+    use chirp_core::Fit::*;
+    [Fill, Fit, Stretch, Center, Span]
+        .get(index.max(0) as usize)
+        .copied()
+        .unwrap_or(Fill)
+}
+
+pub fn corner_index(corner: chirp_core::Corner) -> i32 {
+    use chirp_core::Corner::*;
+    match corner {
+        BottomRight => 0,
+        BottomLeft => 1,
+        TopRight => 2,
+        TopLeft => 3,
+    }
+}
+
+pub fn corner_from(index: i32) -> chirp_core::Corner {
+    use chirp_core::Corner::*;
+    [BottomRight, BottomLeft, TopRight, TopLeft]
+        .get(index.max(0) as usize)
+        .copied()
+        .unwrap_or(BottomRight)
+}

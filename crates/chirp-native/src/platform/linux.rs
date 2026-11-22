@@ -8,7 +8,7 @@
 //! Autostart uses an XDG autostart entry, periodic updates a systemd user timer.
 
 use super::InstallError;
-use chirp_core::{Error, Platform, Result};
+use chirp_core::{Error, Fit, Layout, Platform, Result};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -21,12 +21,19 @@ impl NativePlatform {
 }
 
 impl Platform for NativePlatform {
-    fn set_desktop(&self, image: &Path) -> Result<()> {
+    fn set_desktop(&self, image: &Path, layout: &Layout) -> Result<()> {
         let uri = file_uri(image);
         gsettings("org.gnome.desktop.background", "picture-uri", &uri)?;
         // Since GNOME 42 dark mode reads its own key; missing on older versions.
         let _ = gsettings("org.gnome.desktop.background", "picture-uri-dark", &uri);
-        let _ = gsettings("org.gnome.desktop.background", "picture-options", "zoom");
+        let options = match layout.fit {
+            Fit::Fill => "zoom",
+            Fit::Fit => "scaled",
+            Fit::Stretch => "stretched",
+            Fit::Center => "centered",
+            Fit::Span => "spanned",
+        };
+        let _ = gsettings("org.gnome.desktop.background", "picture-options", options);
         Ok(())
     }
 

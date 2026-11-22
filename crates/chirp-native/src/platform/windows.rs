@@ -9,7 +9,7 @@
 //! * Tasks: Task Scheduler, via `schtasks.exe`.
 
 use super::InstallError;
-use chirp_core::{Error, Platform, Result};
+use chirp_core::{Error, Fit, Layout, Platform, Result, Screens};
 use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -34,30 +34,20 @@ impl NativePlatform {
 }
 
 impl Platform for NativePlatform {
-    fn set_desktop(&self, image: &Path) -> Result<()> {
+    fn set_desktop(&self, image: &Path, layout: &Layout) -> Result<()> {
         if self.machine {
             // SYSTEM has no desktop; each user's sign-in sets it from the shared cache.
             return Ok(());
         }
-        // Fill the screen and keep 4K pictures sharp (Windows re-compresses by default).
+        // Keep 4K pictures sharp (Windows re-compresses them by default).
         if let Ok((desk, _)) =
             RegKey::predef(HKEY_CURRENT_USER).create_subkey(r"Control Panel\Desktop")
         {
-            let _ = desk.set_value("WallpaperStyle", &"10");
-            let _ = desk.set_value("TileWallpaper", &"0");
             let _ = desk.set_value("JPEGImportQuality", &100u32);
         }
-        let mut wide: Vec<u16> = image.as_os_str().encode_wide().chain(Some(0)).collect();
-        unsafe {
-            use windows::Win32::UI::WindowsAndMessaging::*;
-            SystemParametersInfoW(
-                SPI_SETDESKWALLPAPER,
-                0,
-                Some(wide.as_mut_ptr().cast()),
-                SPIF_UPDATEINIFILE | SPIF_SENDCHANGE,
-            )
-        }
-        .map_err(|e| Error::Platform(e.message().to_string()))
+        // IDesktopWallpaper knows placement and single monitors; the classic
+        // call is the fallback for systems where it is not available.
+        set_with_desktop_wallpaper(image, layout).or_else(|_| set_classic(image, layout))
     }
 
     fn set_lockscreen(&self, image: &Path) -> Result<()> {
@@ -74,6 +64,70 @@ impl Platform for NativePlatform {
         };
         run().map_err(|e| Error::Platform(e.message().to_string()))
     }
+}
+
+fn set_with_desktop_wallpaper(image: &Path, layout: &Layout) -> windows::core::Result<()> {
+    use windows::core::{HSTRING, PCWSTR};
+    use windows::Win32::System::Com::*;
+    use windows::Win32::UI::Shell::*;
+    unsafe {
+        // Fine if COM is already initialised on this thread.
+        let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
+        let wallpaper: IDesktopWallpaper = CoCreateInstance(&DesktopWallpaper, None, CLSCTX_ALL)?;
+        let position = match layout.fit {
+            Fit::Fill => DWPOS_FILL,
+            Fit::Fit => DWPOS_FIT,
+            Fit::Stretch => DWPOS_STRETCH,
+            Fit::Center => DWPOS_CENTER,
+            Fit::Span => DWPOS_SPAN,
+        };
+        wallpaper.SetPosition(position)?;
+        let path = HSTRING::from(image.as_os_str());
+        if layout.screens == Screens::All || layout.fit == Fit::Span {
+            return wallpaper.SetWallpaper(PCWSTR::null(), &path);
+        }
+        // Only the main screen: the monitor whose area starts at (0, 0).
+        let count = wallpaper.GetMonitorDevicePathCount()?;
+        for i in 0..count {
+            let id = wallpaper.GetMonitorDevicePathAt(i)?;
+            let rect = wallpaper.GetMonitorRECT(PCWSTR(id.0));
+            let primary = rect.is_ok_and(|r| r.left == 0 && r.top == 0);
+            let result = if primary {
+                wallpaper.SetWallpaper(PCWSTR(id.0), &path)
+            } else {
+                Ok(())
+            };
+            CoTaskMemFree(Some(id.0 as *const core::ffi::c_void));
+            result?;
+        }
+        Ok(())
+    }
+}
+
+fn set_classic(image: &Path, layout: &Layout) -> Result<()> {
+    let (style, tile) = match layout.fit {
+        Fit::Fill => ("10", "0"),
+        Fit::Fit => ("6", "0"),
+        Fit::Stretch => ("2", "0"),
+        Fit::Center => ("0", "0"),
+        Fit::Span => ("22", "0"),
+    };
+    if let Ok((desk, _)) = RegKey::predef(HKEY_CURRENT_USER).create_subkey(r"Control Panel\Desktop")
+    {
+        let _ = desk.set_value("WallpaperStyle", &style);
+        let _ = desk.set_value("TileWallpaper", &tile);
+    }
+    let mut wide: Vec<u16> = image.as_os_str().encode_wide().chain(Some(0)).collect();
+    unsafe {
+        use windows::Win32::UI::WindowsAndMessaging::*;
+        SystemParametersInfoW(
+            SPI_SETDESKWALLPAPER,
+            0,
+            Some(wide.as_mut_ptr().cast()),
+            SPIF_UPDATEINIFILE | SPIF_SENDCHANGE,
+        )
+    }
+    .map_err(|e| Error::Platform(e.message().to_string()))
 }
 
 fn set_machine_lockscreen(image: &Path) -> Result<()> {

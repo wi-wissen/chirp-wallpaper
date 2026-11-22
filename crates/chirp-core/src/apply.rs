@@ -5,7 +5,7 @@
 //! saved while the machine was prepared. The reason is stored in the state, so
 //! the front ends can tell the user what happened.
 
-use crate::config::{Config, Resolution};
+use crate::config::{Config, Layout, Resolution};
 use crate::paths::Paths;
 use crate::picture::Picture;
 use crate::state::{read_picture, write_json, State};
@@ -15,7 +15,7 @@ use std::time::{Duration, SystemTime};
 
 /// What a platform must be able to do.
 pub trait Platform {
-    fn set_desktop(&self, image: &Path) -> Result<()>;
+    fn set_desktop(&self, image: &Path, layout: &Layout) -> Result<()>;
     fn set_lockscreen(&self, image: &Path) -> Result<()>;
 }
 
@@ -107,7 +107,8 @@ pub fn apply_with(
     write_json(&paths.meta_file(&picture), &picture)?;
     fetch_thumb(paths, &picture, download);
 
-    let warnings = set_screens(cfg, platform, &file);
+    let shown = display_image(cfg, paths, &picture, &file);
+    let warnings = set_screens(cfg, platform, &shown);
     let enabled = usize::from(cfg.desktop) + usize::from(cfg.lockscreen);
     if enabled > 0 && warnings.len() == enabled {
         // Nothing could be set at all: report it like a failed update.
@@ -121,6 +122,9 @@ pub fn apply_with(
     state.last_error = None;
     state.save(&paths.state_file())?;
     prune(paths, cfg.keep_days, &file);
+    if cfg.save_copies && !already {
+        let _ = save_copy(&picture, &file);
+    }
 
     Ok(if already {
         Outcome::AlreadyCurrent { picture, warnings }
@@ -144,7 +148,8 @@ fn unchanged(
     state.last_error = Some(reason.clone());
     if state.current.is_none() {
         if let Some((picture, file)) = fallback(paths) {
-            let warnings = set_screens(cfg, platform, &file);
+            let shown = display_image(cfg, paths, &picture, &file);
+            let warnings = set_screens(cfg, platform, &shown);
             let enabled = usize::from(cfg.desktop) + usize::from(cfg.lockscreen);
             if enabled == 0 || warnings.len() < enabled {
                 state.current = Some(picture);
@@ -175,10 +180,64 @@ fn fallback(paths: &Paths) -> Option<(Picture, PathBuf)> {
     baseline(paths)
 }
 
+/// The file to put on screen: the picture itself, or a copy with its title
+/// written into it when that is switched on (falls back to the picture).
+fn display_image(cfg: &Config, paths: &Paths, picture: &Picture, file: &Path) -> PathBuf {
+    if !cfg.caption || picture.title.is_empty() {
+        return file.to_path_buf();
+    }
+    let corner = match cfg.caption_position {
+        crate::Corner::BottomRight => "br",
+        crate::Corner::BottomLeft => "bl",
+        crate::Corner::TopRight => "tr",
+        crate::Corner::TopLeft => "tl",
+    };
+    let out = paths
+        .images_dir()
+        .join(format!("{}.caption-{corner}.jpg", picture.file_stem()));
+    if is_usable(&out) || crate::caption::render(file, &out, picture, cfg.caption_position).is_ok()
+    {
+        out
+    } else {
+        file.to_path_buf()
+    }
+}
+
+/// Folder for kept copies: Pictures/Chirp Wallpaper.
+pub fn copies_dir() -> PathBuf {
+    dirs::picture_dir()
+        .or_else(|| dirs::home_dir().map(|h| h.join("Pictures")))
+        .unwrap_or_else(std::env::temp_dir)
+        .join("Chirp Wallpaper")
+}
+
+/// Keep a copy as "2026-11-22 Title.jpg".
+fn save_copy(picture: &Picture, file: &Path) -> Result<PathBuf> {
+    let dir = copies_dir();
+    std::fs::create_dir_all(&dir)?;
+    let title: String = picture
+        .title
+        .chars()
+        .map(|c| {
+            if "\\/:*?\"<>|".contains(c) || c.is_control() {
+                ' '
+            } else {
+                c
+            }
+        })
+        .collect();
+    let name = format!("{} {}.jpg", picture.date, title.trim());
+    let dest = dir.join(name);
+    if !dest.exists() {
+        std::fs::copy(file, &dest)?;
+    }
+    Ok(dest)
+}
+
 fn set_screens(cfg: &Config, platform: &dyn Platform, file: &Path) -> Vec<(Target, String)> {
     let mut warnings = Vec::new();
     if cfg.desktop {
-        if let Err(e) = platform.set_desktop(file) {
+        if let Err(e) = platform.set_desktop(file, &cfg.layout()) {
             warnings.push((Target::Desktop, e.to_string()));
         }
     }
@@ -284,6 +343,20 @@ pub fn history(paths: &Paths) -> Vec<CachedPicture> {
     list
 }
 
+/// Set the current picture again, e.g. after changing placement or caption.
+pub fn reapply(
+    cfg: &Config,
+    paths: &Paths,
+    platform: &dyn Platform,
+) -> Result<Vec<(Target, String)>> {
+    let state = State::load(&paths.state_file());
+    let (Some(picture), Some(file)) = (state.current, state.current_file) else {
+        return Ok(Vec::new());
+    };
+    let shown = display_image(cfg, paths, &picture, &file);
+    Ok(set_screens(cfg, platform, &shown))
+}
+
 /// Set a picture from the history and remember it as current.
 pub fn use_cached(
     cfg: &Config,
@@ -291,7 +364,8 @@ pub fn use_cached(
     platform: &dyn Platform,
     item: &CachedPicture,
 ) -> Result<Vec<(Target, String)>> {
-    let warnings = set_screens(cfg, platform, &item.image);
+    let shown = display_image(cfg, paths, &item.picture, &item.image);
+    let warnings = set_screens(cfg, platform, &shown);
     let enabled = usize::from(cfg.desktop) + usize::from(cfg.lockscreen);
     if enabled > 0 && warnings.len() == enabled {
         return Err(Error::Platform(warnings[0].1.clone()));
@@ -334,7 +408,11 @@ fn prune(paths: &Paths, keep_days: u32, current: &Path) {
             .file_name()
             .map(|n| n.to_string_lossy().to_string())
             .unwrap_or_default();
-        if !name.ends_with(".jpg") || name.ends_with(".thumb.jpg") || path == current {
+        if !name.ends_with(".jpg")
+            || name.ends_with(".thumb.jpg")
+            || name.contains(".caption-")
+            || path == current
+        {
             continue;
         }
         let old = entry
@@ -347,6 +425,9 @@ fn prune(paths: &Paths, keep_days: u32, current: &Path) {
             let _ = std::fs::remove_file(&path);
             let _ = std::fs::remove_file(path.with_extension("json"));
             let _ = std::fs::remove_file(path.with_extension("thumb.jpg"));
+            for corner in ["br", "bl", "tr", "tl"] {
+                let _ = std::fs::remove_file(path.with_extension(format!("caption-{corner}.jpg")));
+            }
         }
     }
 }
@@ -420,7 +501,7 @@ mod tests {
     }
 
     impl Platform for FakePlatform {
-        fn set_desktop(&self, image: &Path) -> Result<()> {
+        fn set_desktop(&self, image: &Path, _layout: &Layout) -> Result<()> {
             self.desktop.borrow_mut().push(image.into());
             Ok(())
         }
@@ -605,6 +686,46 @@ mod tests {
             other => panic!("unexpected {other:?}"),
         }
         assert_eq!(platform.desktop.borrow().as_slice(), [machine_img]);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn caption_is_written_into_a_copy() {
+        let dir = temp("caption");
+        let paths = Paths::in_dir(&dir);
+        let real_jpeg = |_: &str, dest: &Path| -> Result<()> {
+            image::RgbImage::from_pixel(640, 360, image::Rgb([120, 160, 200]))
+                .save_with_format(dest, image::ImageFormat::Jpeg)
+                .map_err(|e| Error::Format(e.to_string()))
+        };
+        let cfg = Config {
+            caption: true,
+            ..Config::default()
+        };
+        let platform = FakePlatform::default();
+        let fetch = |_: &str, _: Resolution| Ok(sample("2026-11-22"));
+        apply_with(
+            &cfg,
+            &paths,
+            &platform,
+            "de-DE",
+            "2026-11-22",
+            &fetch,
+            &real_jpeg,
+        )
+        .unwrap();
+        let shown = platform.desktop.borrow()[0].clone();
+        assert!(
+            shown.to_string_lossy().ends_with(".caption-br.jpg"),
+            "{shown:?}"
+        );
+        // The app keeps showing the original picture.
+        let state = State::load(&paths.state_file());
+        assert!(state
+            .current_file
+            .unwrap()
+            .to_string_lossy()
+            .ends_with("2026-11-22.jpg"));
         std::fs::remove_dir_all(dir).unwrap();
     }
 

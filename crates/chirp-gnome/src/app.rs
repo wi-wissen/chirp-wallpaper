@@ -1,5 +1,7 @@
 use adw::prelude::*;
-use chirp_core::{history, CachedPicture, Config, Outcome, Paths, Picture, Resolution, State};
+use chirp_core::{
+    history, CachedPicture, Config, Corner, Fit, Outcome, Paths, Picture, Resolution, State,
+};
 use chirp_native::{platform, ui, Localizer, NativePlatform};
 use gtk::{gdk, gio, glib};
 use std::cell::RefCell;
@@ -45,7 +47,15 @@ pub fn run() -> glib::ExitCode {
             // CHIRP_DEMO=1 shows the stored pictures without loading new ones (screenshots).
             if std::env::var_os("CHIRP_DEMO").is_none() {
                 let first = ui.clone();
-                glib::timeout_add_seconds_local_once(3, move || first.update(false));
+                // Without any picture yet, start right away so the user sees it loading.
+                let delay = if State::load(&paths().state_file()).current.is_some() {
+                    3000
+                } else {
+                    300
+                };
+                glib::timeout_add_local_once(std::time::Duration::from_millis(delay), move || {
+                    first.update(false)
+                });
                 let hourly = ui.clone();
                 glib::timeout_add_seconds_local(3600, move || {
                     hourly.update(false);
@@ -187,6 +197,8 @@ pub struct Ui {
     toasts: adw::ToastOverlay,
     banner: adw::Banner,
     picture: gtk::Picture,
+    spinner_box: gtk::Box,
+    has_current: RefCell<bool>,
     meta: gtk::Label,
     title: gtk::Label,
     caption: gtk::Label,
@@ -203,6 +215,10 @@ pub struct Ui {
     region: adw::ComboRow,
     resolution: adw::ComboRow,
     pause: adw::ComboRow,
+    fit: adw::ComboRow,
+    caption_switch: adw::SwitchRow,
+    corner: adw::ComboRow,
+    save_copies: adw::SwitchRow,
     current: RefCell<Option<Picture>>,
     current_file: RefCell<Option<PathBuf>>,
     items: RefCell<Vec<CachedPicture>>,
@@ -296,6 +312,30 @@ impl Ui {
             .margin_start(12)
             .margin_end(12)
             .build();
+        let spinner = gtk::Spinner::builder()
+            .spinning(true)
+            .width_request(32)
+            .height_request(32)
+            .build();
+        let spinner_box = gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
+            .spacing(12)
+            .height_request(340)
+            .valign(gtk::Align::Center)
+            .css_classes(["card"])
+            .visible(false)
+            .build();
+        let spinner_label = gtk::Label::builder()
+            .label(l.t("today-loading", &[]))
+            .css_classes(["dim-label"])
+            .build();
+        spinner.set_vexpand(true);
+        spinner.set_valign(gtk::Align::End);
+        spinner_label.set_vexpand(true);
+        spinner_label.set_valign(gtk::Align::Start);
+        spinner_box.append(&spinner);
+        spinner_box.append(&spinner_label);
+        today.append(&spinner_box);
         today.append(&picture);
         let gap = gtk::Box::new(gtk::Orientation::Vertical, 0);
         gap.set_height_request(6);
@@ -342,7 +382,7 @@ impl Ui {
             &scrolled(&clamp(&history_box, 1000)),
             Some("history"),
             &l.t("nav-history", &[]),
-            "view-grid-symbolic",
+            "document-open-recent-symbolic",
         );
 
         // Settings
@@ -388,6 +428,50 @@ impl Ui {
         let prefs = adw::PreferencesPage::new();
         prefs.add(&general);
         prefs.add(&picture_group);
+        let fit = combo(
+            &l.t("settings-fit", &[]),
+            "",
+            &[
+                "fit-fill",
+                "fit-fit",
+                "fit-stretch",
+                "fit-center",
+                "fit-span",
+            ]
+            .iter()
+            .map(|k| l.t(k, &[]))
+            .collect::<Vec<_>>(),
+        );
+        let caption_switch = adw::SwitchRow::builder()
+            .title(l.t("settings-caption", &[]))
+            .subtitle(l.t("settings-caption-desc", &[]))
+            .build();
+        let corner = combo(
+            &l.t("settings-caption-position", &[]),
+            "",
+            &[
+                "pos-bottom-right",
+                "pos-bottom-left",
+                "pos-top-right",
+                "pos-top-left",
+            ]
+            .iter()
+            .map(|k| l.t(k, &[]))
+            .collect::<Vec<_>>(),
+        );
+        let folder = chirp_core::copies_dir().display().to_string();
+        let save_copies = adw::SwitchRow::builder()
+            .title(l.t("settings-save", &[]))
+            .subtitle(l.t("settings-save-desc", &[("folder", &folder)]))
+            .build();
+        let appearance = adw::PreferencesGroup::builder()
+            .title(l.t("settings-appearance", &[]))
+            .build();
+        appearance.add(&fit);
+        appearance.add(&caption_switch);
+        appearance.add(&corner);
+        appearance.add(&save_copies);
+        prefs.add(&appearance);
         stack.add_titled_with_icon(
             &prefs,
             Some("settings"),
@@ -401,6 +485,8 @@ impl Ui {
             toasts,
             banner,
             picture,
+            spinner_box,
+            has_current: RefCell::new(false),
             meta,
             title,
             caption,
@@ -417,6 +503,10 @@ impl Ui {
             region,
             resolution,
             pause,
+            fit,
+            caption_switch,
+            corner,
+            save_copies,
             current: RefCell::default(),
             current_file: RefCell::default(),
             items: RefCell::default(),
@@ -513,6 +603,20 @@ impl Ui {
             let ui = self.clone();
             row.connect_selected_notify(move |_| ui.save_settings());
         }
+        for row in [&self.fit, &self.corner] {
+            let ui = self.clone();
+            row.connect_selected_notify(move |_| ui.display_changed());
+        }
+        {
+            let ui = self.clone();
+            self.caption_switch
+                .connect_active_notify(move |_| ui.display_changed());
+        }
+        {
+            let ui = self.clone();
+            self.save_copies
+                .connect_active_notify(move |_| ui.save_settings());
+        }
         {
             let ui = self.clone();
             self.pause.connect_selected_notify(move |row| {
@@ -541,6 +645,11 @@ impl Ui {
         self.pause.set_selected(
             ui::pause_index(cfg.paused_until.as_deref(), &chirp_core::today()) as u32,
         );
+        self.fit.set_selected(fit_index(cfg.fit));
+        self.caption_switch.set_active(cfg.caption);
+        self.corner.set_selected(corner_index(cfg.caption_position));
+        self.corner.set_visible(cfg.caption);
+        self.save_copies.set_active(cfg.save_copies);
         *self.loading.borrow_mut() = false;
     }
 
@@ -556,7 +665,23 @@ impl Ui {
         } else {
             Resolution::Uhd
         };
+        cfg.fit = FITS[(self.fit.selected() as usize).min(FITS.len() - 1)];
+        cfg.caption = self.caption_switch.is_active();
+        cfg.caption_position = CORNERS[(self.corner.selected() as usize).min(CORNERS.len() - 1)];
+        cfg.save_copies = self.save_copies.is_active();
+        self.corner.set_visible(cfg.caption);
         let _ = cfg.save(&paths().config_file);
+    }
+
+    /// Save, then show the new placement or caption on the current picture.
+    fn display_changed(&self) {
+        if *self.loading.borrow() {
+            return;
+        }
+        self.save_settings();
+        gio::spawn_blocking(|| {
+            let _ = chirp_core::reapply(&effective_config(), &paths(), native_platform().as_ref());
+        });
     }
 
     fn toast(&self, text: &str) {
@@ -592,6 +717,7 @@ impl Ui {
         let cfg = effective_config();
         let state = &data.state;
         let has = state.current.is_some();
+        *self.has_current.borrow_mut() = has;
         match &state.current {
             Some(p) => {
                 self.meta.set_text(&ui::meta_line(p));
@@ -622,6 +748,8 @@ impl Ui {
         }
         self.file_button.set_visible(has);
         self.picture.set_visible(data.picture.is_some());
+        self.spinner_box
+            .set_visible(*self.busy.borrow() && data.picture.is_none());
         if let Some(px) = data.picture {
             self.picture.set_paintable(Some(&px.texture()));
         }
@@ -698,6 +826,25 @@ impl Ui {
             let ui = self.clone();
             use_button.connect_clicked(move |_| ui.use_history(index));
         }
+        let open_button = gtk::Button::builder()
+            .icon_name("image-x-generic-symbolic")
+            .tooltip_text(self.l.t("history-open", &[]))
+            .valign(gtk::Align::Center)
+            .build();
+        open_button.update_property(&[gtk::accessible::Property::Label(
+            &self.l.t("history-open", &[]),
+        )]);
+        {
+            let file = item.image.clone();
+            let window = self.window.clone();
+            open_button.connect_clicked(move |_| {
+                gtk::FileLauncher::new(Some(&gio::File::for_path(&file))).launch(
+                    Some(&window),
+                    gio::Cancellable::NONE,
+                    |_| {},
+                );
+            });
+        }
         let texts = gtk::Box::new(gtk::Orientation::Vertical, 2);
         texts.set_hexpand(true);
         texts.append(&title);
@@ -708,6 +855,7 @@ impl Ui {
         row.set_margin_top(8);
         row.set_margin_bottom(8);
         row.append(&texts);
+        row.append(&open_button);
         row.append(&use_button);
         let card = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
@@ -743,6 +891,13 @@ impl Ui {
         }
         *self.busy.borrow_mut() = true;
         self.update_button.set_sensitive(false);
+        self.update_button
+            .set_label(&self.l.t("today-updating", &[]));
+        if !*self.has_current.borrow() {
+            // First start: show that today's picture is on its way.
+            self.spinner_box.set_visible(true);
+            self.title.set_visible(false);
+        }
         let ui = self.clone();
         glib::spawn_future_local(async move {
             let result = gio::spawn_blocking(|| {
@@ -754,7 +909,12 @@ impl Ui {
             .await;
             *ui.busy.borrow_mut() = false;
             ui.update_button.set_sensitive(true);
-            if manual {
+            ui.update_button.set_label(&ui.l.t("today-update", &[]));
+            ui.spinner_box.set_visible(false);
+            ui.title.set_visible(true);
+            // A new picture is always announced, also from the hourly check.
+            let announce = manual || matches!(result, Ok(Ok(Outcome::Updated { .. })));
+            if announce {
                 let l = &ui.l;
                 let msg = match result {
                     Ok(Ok(Outcome::Updated { picture, .. })) => {
@@ -801,4 +961,20 @@ fn combo(title: &str, subtitle: &str, items: &[String]) -> adw::ComboRow {
         row.set_subtitle(subtitle);
     }
     row
+}
+
+const FITS: [Fit; 5] = [Fit::Fill, Fit::Fit, Fit::Stretch, Fit::Center, Fit::Span];
+const CORNERS: [Corner; 4] = [
+    Corner::BottomRight,
+    Corner::BottomLeft,
+    Corner::TopRight,
+    Corner::TopLeft,
+];
+
+fn fit_index(fit: Fit) -> u32 {
+    FITS.iter().position(|f| *f == fit).unwrap_or(0) as u32
+}
+
+fn corner_index(corner: Corner) -> u32 {
+    CORNERS.iter().position(|c| *c == corner).unwrap_or(0) as u32
 }

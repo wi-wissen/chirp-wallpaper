@@ -14,6 +14,8 @@ finish-args:
   - --socket=fallback-x11
   - --socket=wayland
   - --device=dri
+  # Only for "Keep pictures": the folder Pictures/Chirp Wallpaper.
+  - --filesystem=xdg-pictures/Chirp Wallpaper:create
 build-options:
   append-path: /usr/lib/sdk/rust-stable/bin
   env:

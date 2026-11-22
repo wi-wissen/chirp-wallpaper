@@ -16,7 +16,7 @@ mod single;
 #[cfg(windows)]
 mod tray;
 
-use chirp_core::{Config, Outcome, Paths, Resolution};
+use chirp_core::{Config, Outcome, Paths, Resolution, Screens};
 use chirp_native::{platform, Localizer, NativePlatform};
 use model::Snapshot;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
@@ -101,9 +101,15 @@ fn run(background: bool) -> Result<(), slint::PlatformError> {
     let first = slint::Timer::default();
     let hourly = slint::Timer::default();
     if !demo {
-        first.start(slint::TimerMode::SingleShot, Duration::from_secs(3), || {
-            update(false)
-        });
+        let has_picture = chirp_core::State::load(&user_paths().state_file())
+            .current
+            .is_some();
+        let delay = if has_picture { 3000 } else { 300 };
+        first.start(
+            slint::TimerMode::SingleShot,
+            Duration::from_millis(delay),
+            || update(false),
+        );
         hourly.start(
             slint::TimerMode::Repeated,
             Duration::from_secs(3600),
@@ -121,6 +127,15 @@ pub fn with_window(f: impl FnOnce(&AppWindow)) {
             f(&ui);
         }
     });
+}
+
+/// Open the web search about today's picture.
+pub fn open_info() {
+    SNAPSHOT.with(|s| {
+        if let Some(url) = s.borrow().current.as_ref().and_then(|p| p.info_url.clone()) {
+            let _ = open::that(url);
+        }
+    })
 }
 
 /// Show the window and bring it to the front.
@@ -179,6 +194,16 @@ fn fill_texts(ui: &AppWindow, l: &Localizer) {
         set_about_text => "about-text",
         set_about_website => "about-website",
         set_about_source => "about-source",
+        set_today_loading => "today-loading",
+        set_today_updating => "today-updating",
+        set_history_open => "history-open",
+        set_settings_appearance => "settings-appearance",
+        set_settings_fit => "settings-fit",
+        set_settings_screens => "settings-screens",
+        set_settings_caption => "settings-caption",
+        set_settings_caption_desc => "settings-caption-desc",
+        set_settings_caption_position => "settings-caption-position",
+        set_settings_save => "settings-save",
     );
     let mut regions = vec![SharedString::from(l.t("settings-region-auto", &[]))];
     regions.extend(
@@ -192,6 +217,26 @@ fn fill_texts(ui: &AppWindow, l: &Localizer) {
         .map(|id| l.t(id, &[]).into())
         .collect();
     ui.set_pause_options(ModelRc::new(VecModel::from(pauses)));
+    let list = |ids: &[&str]| -> ModelRc<SharedString> {
+        let items: Vec<SharedString> = ids.iter().map(|id| l.t(id, &[]).into()).collect();
+        ModelRc::new(VecModel::from(items))
+    };
+    ui.set_fits(list(&[
+        "fit-fill",
+        "fit-fit",
+        "fit-stretch",
+        "fit-center",
+        "fit-span",
+    ]));
+    ui.set_screen_options(list(&["screens-all", "screens-primary"]));
+    ui.set_corners(list(&[
+        "pos-bottom-right",
+        "pos-bottom-left",
+        "pos-top-right",
+        "pos-top-left",
+    ]));
+    let folder = chirp_core::copies_dir().display().to_string();
+    tr.set_settings_save_desc(l.t("settings-save-desc", &[("folder", &folder)]).into());
 }
 
 fn user_paths() -> Paths {
@@ -223,6 +268,11 @@ fn load_settings(ui: &AppWindow, _l: &Localizer) {
     ui.set_autostart(
         platform::autostart_command(false).is_some_and(|c| c.contains("--background")),
     );
+    ui.set_fit_index(model::fit_index(cfg.fit));
+    ui.set_screens_index(i32::from(cfg.screens == Screens::Primary));
+    ui.set_caption(cfg.caption);
+    ui.set_corner_index(model::corner_index(cfg.caption_position));
+    ui.set_save_copies(cfg.save_copies);
 }
 
 fn save_settings(ui: &AppWindow) {
@@ -236,6 +286,15 @@ fn save_settings(ui: &AppWindow) {
     } else {
         Resolution::Uhd
     };
+    cfg.fit = model::fit_from(ui.get_fit_index());
+    cfg.screens = if ui.get_screens_index() == 1 {
+        Screens::Primary
+    } else {
+        Screens::All
+    };
+    cfg.caption = ui.get_caption();
+    cfg.caption_position = model::corner_from(ui.get_corner_index());
+    cfg.save_copies = ui.get_save_copies();
     let _ = cfg.save(&paths.config_file);
 
     let wanted = ui.get_autostart();
@@ -256,13 +315,7 @@ fn save_settings(ui: &AppWindow) {
 
 fn connect(ui: &AppWindow, l: Rc<Localizer>) {
     ui.on_update_now(|| update(true));
-    ui.on_open_info(|| {
-        SNAPSHOT.with(|s| {
-            if let Some(url) = s.borrow().current.as_ref().and_then(|p| p.info_url.clone()) {
-                let _ = open::that(url);
-            }
-        })
-    });
+    ui.on_open_info(open_info);
     ui.on_show_file(|| {
         let file = SNAPSHOT.with(|s| s.borrow().current_file.clone());
         if let Some(file) = file {
@@ -272,6 +325,31 @@ fn connect(ui: &AppWindow, l: Rc<Localizer>) {
     {
         let l = l.clone();
         ui.on_use_history(move |index| use_history(&l, index as usize));
+    }
+    ui.on_open_history(|index| {
+        let file = SNAPSHOT.with(|s| {
+            s.borrow()
+                .history
+                .get(index as usize)
+                .map(|c| c.image.clone())
+        });
+        if let Some(file) = file {
+            let _ = open::that(file);
+        }
+    });
+    {
+        let weak = ui.as_weak();
+        ui.on_display_changed(move || {
+            if let Some(ui) = weak.upgrade() {
+                save_settings(&ui);
+                // Show the effect right away on the current picture.
+                let cfg = effective_config();
+                let paths = user_paths();
+                std::thread::spawn(move || {
+                    let _ = chirp_core::reapply(&cfg, &paths, &NativePlatform::new(false));
+                });
+            }
+        });
     }
     {
         let weak = ui.as_weak();
@@ -411,7 +489,10 @@ pub fn update(manual: bool) {
         let _ = slint::invoke_from_event_loop(move || {
             let l = Rc::new(Localizer::new(None));
             with_window(|ui| ui.set_busy(false));
-            if manual {
+            // A new picture is always announced, also from the hourly check,
+            // so a changing background never comes as a surprise.
+            let announce = manual || matches!(outcome, Ok(Outcome::Updated { .. }));
+            if announce {
                 let msg = match &outcome {
                     Ok(Outcome::Updated { picture, .. }) => {
                         l.t("updated", &[("title", &picture.title)])

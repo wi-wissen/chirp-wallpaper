@@ -7,14 +7,17 @@
 
 pub mod apply;
 pub mod bing;
+pub mod caption;
 pub mod config;
 pub mod markets;
 pub mod paths;
 pub mod picture;
 pub mod state;
 
-pub use apply::{apply, history, use_cached, CachedPicture, Outcome, Platform, Target};
-pub use config::{Config, Resolution};
+pub use apply::{
+    apply, copies_dir, history, reapply, use_cached, CachedPicture, Outcome, Platform, Target,
+};
+pub use config::{Config, Corner, Fit, Layout, Resolution, Screens};
 pub use paths::{Paths, Scope};
 pub use picture::Picture;
 pub use state::State;
