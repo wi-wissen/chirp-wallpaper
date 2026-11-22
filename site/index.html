@@ -46,6 +46,10 @@ h2 { font: 600 1.8rem/1.2 var(--display); margin: 0 0 20px; }
 .card p { margin: 0; color: var(--muted); }
 pre { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-size: 0.9rem; }
 code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
+.shots { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.shots figure { margin: 0; }
+.shots img { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.shots figcaption { font-size: 0.9rem; color: var(--muted); margin-top: 6px; }
 footer { padding-block: 48px; color: var(--muted); font-size: 0.9rem; }
 .lang { position: absolute; top: 16px; right: 20px; }
 .lang select { font: inherit; padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.2); background: rgba(255,255,255,0.8); color: #1C2F3C; }
@@ -77,10 +81,10 @@ footer { padding-block: 48px; color: var(--muted); font-size: 0.9rem; }
     <p class="lede" data-i18n="lede">Chirp Wallpaper sets the daily Bing picture as your desktop background and lock screen, in 4K, with the story behind it. Free and open source. No installation, no account, no administrator rights.</p>
     <div class="buttons">
       <a class="btn primary" href="https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/ChirpWallpaper.exe" data-i18n="dl-win">Download for Windows</a>
-      <a class="btn secondary" href="https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/chirp-wallpaper-linux-x86_64.tar.gz" data-i18n="dl-linux">Linux (GNOME)</a>
+      <a class="btn secondary" href="https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/ChirpWallpaper.flatpak" data-i18n="dl-linux">Linux (Flatpak)</a>
       <a class="btn secondary" href="https://github.com/wi-wissen/chirp-wallpaper" data-i18n="source">Source code</a>
     </div>
-    <p class="small" data-i18n="early">Windows 10 and 11: one file, about 10 MB. GNOME: unpack and run install.sh.</p>
+    <p class="small" data-i18n="early">Windows 10 and 11: one file, about 10 MB. Linux: Flatpak for GNOME, Flathub is in preparation.</p>
   </div>
 </header>
 
@@ -92,6 +96,13 @@ footer { padding-block: 48px; color: var(--muted); font-size: 0.9rem; }
       <div class="card"><h3 data-i18n="f2h">The story behind it</h3><p data-i18n="f2p">Title, place, copyright and a short text about every picture, with a link to learn more.</p></div>
       <div class="card"><h3 data-i18n="f3h">In your language</h3><p data-i18n="f3p">21 languages. Bing pictures and texts follow your region, e.g. German texts for Germany.</p></div>
       <div class="card"><h3 data-i18n="f4h">Offline? No problem</h3><p data-i18n="f4p">If no new picture can be loaded, nothing changes. The app remembers why and tells you.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="shots">
+      <figure><img src="screenshots/windows-today.png" alt="Chirp Wallpaper on Windows 11" loading="lazy"><figcaption>Windows 11</figcaption></figure>
+      <figure><img src="screenshots/gnome-today.png" alt="Chirp Wallpaper on GNOME" loading="lazy"><figcaption>GNOME</figcaption></figure>
     </div>
   </section>
 
@@ -120,9 +131,9 @@ const T = {
     "headline": "Jeden Morgen ein neues Bild.",
     "lede": "Chirp Wallpaper setzt das tägliche Bing-Bild als Desktop-Hintergrund und Sperrbildschirm, in 4K und mit der Geschichte dahinter. Kostenlos und Open Source. Keine Installation, kein Konto, keine Administratorrechte.",
     "dl-win": "Für Windows herunterladen",
-    "dl-linux": "Linux (GNOME)",
+    "dl-linux": "Linux (Flatpak)",
     "source": "Quellcode",
-    "early": "Windows 10 und 11: eine Datei, etwa 10 MB. GNOME: entpacken und install.sh ausführen.",
+    "early": "Windows 10 und 11: eine Datei, etwa 10 MB. Linux: Flatpak für GNOME, Flathub ist in Vorbereitung.",
     "what": "Was es kann",
     "f1h": "Desktop und Sperrbildschirm",
     "f1p": "Dasselbe Bild auf beiden, automatisch bei der Anmeldung und jede Stunde.",

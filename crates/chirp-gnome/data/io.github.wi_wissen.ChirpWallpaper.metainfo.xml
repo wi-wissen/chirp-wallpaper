@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.wi_wissen.ChirpWallpaper</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Chirp Wallpaper</name>
+  <summary>A new picture every morning</summary>
+  <summary xml:lang="de">Jeden Morgen ein neues Bild</summary>
+  <developer id="io.github.wi_wissen">
+    <name>Chirp Wallpaper contributors</name>
+  </developer>
+  <description>
+    <p>
+      Chirp Wallpaper sets the daily Bing picture as your desktop background, in 4K,
+      and tells the story behind it: where it was taken, what makes the place special
+      and who took the photo. GNOME shows the same picture on the lock screen.
+    </p>
+    <ul>
+      <li>Today’s picture with title, place, copyright and a short text you can select and copy</li>
+      <li>History of the last days: pick a favourite and keep it for a week</li>
+      <li>Picture region decides the picture and the language of its texts</li>
+      <li>Runs in the background and changes the picture every day, if you like</li>
+      <li>Nothing changes when you are offline</li>
+      <li>Available in 21 languages</li>
+    </ul>
+    <p>
+      Chirp Wallpaper is not affiliated with Microsoft. Pictures and texts come from Bing
+      and belong to their photographers.
+    </p>
+    <p xml:lang="de">
+      Chirp Wallpaper setzt das tägliche Bing-Bild als Desktop-Hintergrund, in 4K, und erzählt
+      die Geschichte dahinter: wo es aufgenommen wurde, was den Ort besonders macht und wer
+      das Foto gemacht hat. GNOME zeigt dasselbe Bild auf dem Sperrbildschirm.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.wi_wissen.ChirpWallpaper.desktop</launchable>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Today’s picture and the story behind it (sample illustration)</caption>
+      <image>https://wi-wissen.github.io/chirp-wallpaper/screenshots/gnome-today.png</image>
+    </screenshot>
+  </screenshots>
+  <url type="homepage">https://wi-wissen.github.io/chirp-wallpaper/</url>
+  <url type="bugtracker">https://github.com/wi-wissen/chirp-wallpaper/issues</url>
+  <url type="vcs-browser">https://github.com/wi-wissen/chirp-wallpaper</url>
+  <url type="translate">https://github.com/wi-wissen/chirp-wallpaper/tree/main/crates/chirp-native/locales</url>
+  <branding>
+    <color type="primary" scheme_preference="light">#a9cde4</color>
+    <color type="primary" scheme_preference="dark">#1c2f3c</color>
+  </branding>
+  <content_rating type="oars-1.1"/>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>touch</control>
+  </supports>
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <categories>
+    <category>Utility</category>
+  </categories>
+  <keywords>
+    <keyword>wallpaper</keyword>
+    <keyword>background</keyword>
+    <keyword>bing</keyword>
+    <keyword>picture of the day</keyword>
+  </keywords>
+  <releases>
+    <release version="0.1.0" date="2026-11-22">
+      <description>
+        <p>First release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

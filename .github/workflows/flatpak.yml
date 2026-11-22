@@ -1,0 +1,30 @@
+name: Flatpak
+
+# Builds the GNOME app as Flatpak bundle to check that the manifest works.
+on:
+  push:
+    branches: [main]
+    paths: ["crates/**", "Cargo.lock", "Cargo.toml", "flatpak/**", ".github/workflows/flatpak.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flatpak:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-48
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cargo sources are up to date
+        run: |
+          python3 flatpak/cargo-sources.py Cargo.lock > /tmp/cargo-sources.json
+          diff -q /tmp/cargo-sources.json flatpak/cargo-sources.json || {
+            echo "::error::Run flatpak/cargo-sources.py Cargo.lock > flatpak/cargo-sources.json"; exit 1; }
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: ChirpWallpaper.flatpak
+          manifest-path: flatpak/io.github.wi_wissen.ChirpWallpaper.yml
+          cache-key: flatpak-builder-${{ github.sha }}

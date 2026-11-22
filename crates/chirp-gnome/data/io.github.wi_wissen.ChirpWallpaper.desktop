@@ -6,6 +6,6 @@ Comment[de]=Das tägliche Bing-Bild als Desktop-Hintergrund
 Exec=chirp-wallpaper
 Icon=io.github.wi_wissen.ChirpWallpaper
 Terminal=false
-Categories=GNOME;GTK;Utility;DesktopSettings;
+Categories=GNOME;GTK;Settings;DesktopSettings;
 Keywords=wallpaper;background;bing;picture;
 StartupNotify=true

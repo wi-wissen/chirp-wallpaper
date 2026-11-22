@@ -96,16 +96,20 @@ fn run(background: bool) -> Result<(), slint::PlatformError> {
     }
 
     // First check shortly after start, then every hour.
+    // CHIRP_DEMO=1 shows the stored pictures without loading new ones (screenshots).
+    let demo = std::env::var_os("CHIRP_DEMO").is_some();
     let first = slint::Timer::default();
-    first.start(slint::TimerMode::SingleShot, Duration::from_secs(3), || {
-        update(false)
-    });
     let hourly = slint::Timer::default();
-    hourly.start(
-        slint::TimerMode::Repeated,
-        Duration::from_secs(3600),
-        || update(false),
-    );
+    if !demo {
+        first.start(slint::TimerMode::SingleShot, Duration::from_secs(3), || {
+            update(false)
+        });
+        hourly.start(
+            slint::TimerMode::Repeated,
+            Duration::from_secs(3600),
+            || update(false),
+        );
+    }
 
     slint::run_event_loop_until_quit()
 }

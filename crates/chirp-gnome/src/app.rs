@@ -42,13 +42,16 @@ pub fn run() -> glib::ExitCode {
             ui.refresh();
             set_hold(app, autostart_enabled());
             // First check shortly after start, then every hour.
-            let first = ui.clone();
-            glib::timeout_add_seconds_local_once(3, move || first.update(false));
-            let hourly = ui.clone();
-            glib::timeout_add_seconds_local(3600, move || {
-                hourly.update(false);
-                glib::ControlFlow::Continue
-            });
+            // CHIRP_DEMO=1 shows the stored pictures without loading new ones (screenshots).
+            if std::env::var_os("CHIRP_DEMO").is_none() {
+                let first = ui.clone();
+                glib::timeout_add_seconds_local_once(3, move || first.update(false));
+                let hourly = ui.clone();
+                glib::timeout_add_seconds_local(3600, move || {
+                    hourly.update(false);
+                    glib::ControlFlow::Continue
+                });
+            }
             *window.borrow_mut() = Some(ui);
         });
     }
@@ -422,6 +425,8 @@ impl Ui {
         });
         ui.load_settings();
         ui.connect(app);
+        // Start with the main button focused, not inside a selectable text.
+        GtkWindowExt::set_focus(&ui.window, Some(&ui.update_button));
         ui
     }
 

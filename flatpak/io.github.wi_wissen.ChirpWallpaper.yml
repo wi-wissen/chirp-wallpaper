@@ -1,0 +1,38 @@
+# Flatpak manifest for the GNOME app.
+# Local build:  flatpak-builder --user --install --force-clean build flatpak/io.github.wi_wissen.ChirpWallpaper.yml
+# After changing Cargo.lock: flatpak/cargo-sources.py Cargo.lock > flatpak/cargo-sources.json
+id: io.github.wi_wissen.ChirpWallpaper
+runtime: org.gnome.Platform
+runtime-version: '48'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: chirp-wallpaper
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/chirp-wallpaper/cargo
+    CARGO_NET_OFFLINE: 'true'
+modules:
+  - name: chirp-wallpaper
+    buildsystem: simple
+    build-commands:
+      - cargo --offline build --release -p chirp-gnome
+      - install -Dm755 target/release/chirp-wallpaper /app/bin/chirp-wallpaper
+      - install -Dm644 crates/chirp-gnome/data/io.github.wi_wissen.ChirpWallpaper.desktop -t /app/share/applications
+      - install -Dm644 crates/chirp-gnome/data/io.github.wi_wissen.ChirpWallpaper.svg -t /app/share/icons/hicolor/scalable/apps
+      - install -Dm644 crates/chirp-gnome/data/io.github.wi_wissen.ChirpWallpaper.metainfo.xml -t /app/share/metainfo
+    sources:
+      - type: dir
+        path: ..
+        skip:
+          - target
+          - build
+          - .flatpak-builder
+      - cargo-sources.json

@@ -19,9 +19,12 @@ Free, open source (MIT), one small program: no installation, no account, no admi
 |---|---|
 | **Windows app** | [ChirpWallpaper.exe](https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/ChirpWallpaper.exe) |
 | Windows command line | [chirp-windows-x64.exe](https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/chirp-windows-x64.exe) |
-| **Linux app (GNOME)** + command line | [chirp-wallpaper-linux-x86_64.tar.gz](https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/chirp-wallpaper-linux-x86_64.tar.gz) |
+| **Linux app (GNOME), Flatpak** | [ChirpWallpaper.flatpak](https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/ChirpWallpaper.flatpak) (Flathub: planned) |
+| Linux command line | [chirp-linux-x86_64.tar.gz](https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/chirp-linux-x86_64.tar.gz) |
 
 ## Windows app
+
+![Windows app](site/screenshots/windows-today.png)
 
 Download `ChirpWallpaper.exe`, put it anywhere (e.g. a `Programs` folder in your profile) and double-click it.
 
@@ -85,8 +88,10 @@ Settings are merged: defaults → machine → portable → user.
 
 ## GNOME app
 
-Unpack the archive and run `./install.sh` (installs for your user into `~/.local`, no root), then open
-*Chirp Wallpaper* from the app grid. Needs GTK 4.12+ and libadwaita 1.5+ (e.g. Ubuntu 24.04, Fedora 40 or newer).
+![GNOME app](site/screenshots/gnome-today.png)
+
+Install `ChirpWallpaper.flatpak` (double-click on Fedora and most GNOME systems; on Ubuntu, Flatpak has to be
+added first, see [flatpak/FLATHUB.md](flatpak/FLATHUB.md)). Publication on Flathub is prepared.
 
 The app follows GNOME conventions: a header bar with *Today*, *History* and *Settings*, a banner when no new
 picture could be loaded, selectable description text. GNOME has no tray icons, so with *Start automatically at
@@ -94,7 +99,9 @@ sign-in* the app starts without a window (`--background`, XDG autostart), keeps 
 opening it from the app grid shows the window, closing the window keeps it in the background.
 
 The desktop is set with `gsettings`; GNOME's lock screen shows the same picture blurred, so it follows automatically.
-The login screen (GDM) has no supported setting and is left unchanged. A Flatpak (with the wallpaper portal) is planned.
+The login screen (GDM) has no supported setting and is left unchanged.
+Inside the Flatpak, the background is set through the wallpaper portal and autostart through the background portal
+(GNOME may ask once for permission); outside it, `gsettings` and an XDG autostart entry are used.
 
 ## Translations
 
