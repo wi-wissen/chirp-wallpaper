@@ -105,6 +105,7 @@ pub fn apply_with(
         Err(e) => return unchanged(paths, &mut state, e),
     };
     write_json(&paths.meta_file(&picture), &picture)?;
+    fetch_thumb(paths, &picture, download);
 
     let warnings = set_screens(cfg, platform, &file);
     let enabled = usize::from(cfg.desktop) + usize::from(cfg.lockscreen);
@@ -185,6 +186,88 @@ fn ensure_image(paths: &Paths, picture: &Picture, download: DownloadFn) -> Resul
     Ok(file)
 }
 
+/// Download the small preview; failures only mean the gallery shows the big picture.
+fn fetch_thumb(paths: &Paths, picture: &Picture, download: DownloadFn) {
+    let Some(url) = &picture.thumb_url else {
+        return;
+    };
+    let file = paths.thumb_file(picture);
+    if is_usable(&file) {
+        return;
+    }
+    let part = file.with_extension("part");
+    if download(url, &part).is_ok() && looks_like_image(&part) {
+        let _ = std::fs::rename(&part, &file);
+    } else {
+        let _ = std::fs::remove_file(&part);
+    }
+}
+
+/// One picture in the local history.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CachedPicture {
+    pub picture: Picture,
+    pub image: PathBuf,
+    /// Small preview if available, otherwise the image itself.
+    pub thumb: PathBuf,
+}
+
+/// Pictures in the cache, newest first.
+pub fn history(paths: &Paths) -> Vec<CachedPicture> {
+    let Ok(entries) = std::fs::read_dir(paths.images_dir()) else {
+        return Vec::new();
+    };
+    let mut list: Vec<CachedPicture> = entries
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.extension().is_some_and(|e| e == "json"))
+        .filter_map(|meta| {
+            let picture = read_picture(&meta)?;
+            let image = paths.image_file(&picture);
+            if !is_usable(&image) {
+                return None;
+            }
+            let thumb = paths.thumb_file(&picture);
+            let thumb = if is_usable(&thumb) {
+                thumb
+            } else {
+                image.clone()
+            };
+            Some(CachedPicture {
+                picture,
+                image,
+                thumb,
+            })
+        })
+        .collect();
+    list.sort_by(|a, b| {
+        b.picture
+            .date
+            .cmp(&a.picture.date)
+            .then(a.picture.id.cmp(&b.picture.id))
+    });
+    list
+}
+
+/// Set a picture from the history and remember it as current.
+pub fn use_cached(
+    cfg: &Config,
+    paths: &Paths,
+    platform: &dyn Platform,
+    item: &CachedPicture,
+) -> Result<Vec<(Target, String)>> {
+    let warnings = set_screens(cfg, platform, &item.image);
+    let enabled = usize::from(cfg.desktop) + usize::from(cfg.lockscreen);
+    if enabled > 0 && warnings.len() == enabled {
+        return Err(Error::Platform(warnings[0].1.clone()));
+    }
+    let mut state = State::load(&paths.state_file());
+    state.current = Some(item.picture.clone());
+    state.current_file = Some(item.image.clone());
+    state.save(&paths.state_file())?;
+    Ok(warnings)
+}
+
 fn is_usable(file: &Path) -> bool {
     std::fs::metadata(file).is_ok_and(|m| m.len() > 0)
 }
@@ -212,7 +295,11 @@ fn prune(paths: &Paths, keep_days: u32, current: &Path) {
     let now = SystemTime::now();
     for entry in entries.flatten() {
         let path = entry.path();
-        if path.extension().is_none_or(|e| e != "jpg") || path == current {
+        let name = path
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default();
+        if !name.ends_with(".jpg") || name.ends_with(".thumb.jpg") || path == current {
             continue;
         }
         let old = entry
@@ -224,6 +311,7 @@ fn prune(paths: &Paths, keep_days: u32, current: &Path) {
         if old {
             let _ = std::fs::remove_file(&path);
             let _ = std::fs::remove_file(path.with_extension("json"));
+            let _ = std::fs::remove_file(path.with_extension("thumb.jpg"));
         }
     }
 }
@@ -273,6 +361,7 @@ pub fn seal_custom(paths: &Paths, image: &Path, title: &str) -> Result<Picture> 
         info_url: None,
         image_url: String::new(),
         fallback_url: None,
+        thumb_url: None,
         note: None,
     };
     write_json(&paths.baseline_meta(), &picture)?;
@@ -322,6 +411,7 @@ mod tests {
             info_url: None,
             image_url: "https://example.invalid/uhd.jpg".into(),
             fallback_url: Some("https://example.invalid/fhd.jpg".into()),
+            thumb_url: None,
             note: None,
         }
     }
@@ -572,6 +662,42 @@ mod tests {
                 until: "2026-12-01".into()
             }
         );
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn history_lists_cached_pictures_newest_first() {
+        let dir = temp("history");
+        let paths = Paths::in_dir(&dir);
+        for date in ["2026-11-20", "2026-11-22", "2026-11-21"] {
+            let fetch = move |_: &str, _: Resolution| {
+                let mut p = sample(date);
+                p.thumb_url = Some("https://example.invalid/thumb.jpg".into());
+                Ok(p)
+            };
+            apply_with(
+                &Config::default(),
+                &paths,
+                &FakePlatform::default(),
+                "de-DE",
+                date,
+                &fetch,
+                &write_jpeg,
+            )
+            .unwrap();
+        }
+        let list = history(&paths);
+        let dates: Vec<&str> = list.iter().map(|c| c.picture.date.as_str()).collect();
+        assert_eq!(dates, ["2026-11-22", "2026-11-21", "2026-11-20"]);
+        assert!(list[0].thumb.to_string_lossy().ends_with(".thumb.jpg"));
+
+        let platform = FakePlatform::default();
+        use_cached(&Config::default(), &paths, &platform, &list[2]).unwrap();
+        assert_eq!(
+            State::load(&paths.state_file()).current.unwrap().date,
+            "2026-11-20"
+        );
+        assert_eq!(platform.desktop.borrow().len(), 1);
         std::fs::remove_dir_all(dir).unwrap();
     }
 

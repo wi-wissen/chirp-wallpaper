@@ -32,6 +32,9 @@ pub struct Picture {
     /// Fallback download address (1920×1080) if the best one fails.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fallback_url: Option<String>,
+    /// Small preview (about 400×240) for galleries.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub thumb_url: Option<String>,
     /// Text marking a demo picture (e.g. AI-generated sample), if any.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,

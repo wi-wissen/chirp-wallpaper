@@ -111,6 +111,11 @@ impl Paths {
             .join(format!("{}.jpg", picture.file_stem()))
     }
 
+    pub fn thumb_file(&self, picture: &Picture) -> PathBuf {
+        self.images_dir()
+            .join(format!("{}.thumb.jpg", picture.file_stem()))
+    }
+
     pub fn meta_file(&self, picture: &Picture) -> PathBuf {
         self.images_dir()
             .join(format!("{}.json", picture.file_stem()))

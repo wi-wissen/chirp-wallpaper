@@ -13,7 +13,7 @@ pub mod paths;
 pub mod picture;
 pub mod state;
 
-pub use apply::{apply, Outcome, Platform, Target};
+pub use apply::{apply, history, use_cached, CachedPicture, Outcome, Platform, Target};
 pub use config::{Config, Resolution};
 pub use paths::{Paths, Scope};
 pub use picture::Picture;

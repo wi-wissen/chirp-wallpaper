@@ -76,11 +76,11 @@ footer { padding-block: 48px; color: var(--muted); font-size: 0.9rem; }
     <h1 data-i18n="headline">A new picture every morning.</h1>
     <p class="lede" data-i18n="lede">Chirp Wallpaper sets the daily Bing picture as your desktop background and lock screen, in 4K, with the story behind it. Free and open source. No installation, no account, no administrator rights.</p>
     <div class="buttons">
-      <a class="btn primary" href="https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/chirp-windows-x64.exe" data-i18n="dl-win">Download for Windows</a>
-      <a class="btn secondary" href="https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/chirp-linux-x86_64.tar.gz" data-i18n="dl-linux">Linux (GNOME)</a>
+      <a class="btn primary" href="https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/ChirpWallpaper.exe" data-i18n="dl-win">Download for Windows</a>
+      <a class="btn secondary" href="https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/chirp-linux-x86_64.tar.gz" data-i18n="dl-linux">Linux (command line)</a>
       <a class="btn secondary" href="https://github.com/wi-wissen/chirp-wallpaper" data-i18n="source">Source code</a>
     </div>
-    <p class="small" data-i18n="early">Early version: command line program. The app with a window follows.</p>
+    <p class="small" data-i18n="early">Windows 10 and 11. One file, about 10 MB. The GNOME app follows.</p>
   </div>
 </header>
 
@@ -97,15 +97,12 @@ footer { padding-block: 48px; color: var(--muted); font-size: 0.9rem; }
 
   <section>
     <h2 data-i18n="start">Get started</h2>
-    <p data-i18n="start-p">Download, then run once. To change the picture automatically:</p>
-    <pre><code>chirp apply
-chirp install
-chirp status</code></pre>
+    <p data-i18n="start-p">Download ChirpWallpaper.exe and double-click it. Under Settings, turn on “Start automatically at sign-in”: the app then waits in the notification area and changes the picture every day. No shortcut in the Startup folder needed.</p>
   </section>
 
   <section>
     <h2 data-i18n="schools">For schools and reset computers</h2>
-    <p data-i18n="schools-p">On computers that return to a frozen state at every start, prepare the image once as administrator. The settings and tasks stay; pictures are loaded again at every start. Without internet, the baseline picture saved during preparation is shown.</p>
+    <p data-i18n="schools-p">On computers that return to a frozen state at every start, prepare the image once: Settings → “Set up for all users”. The app is copied to Program Files, the lock and sign-in screen get the picture for everyone, and today’s picture becomes the baseline for days without internet. Administrators can do the same with the command line program.</p>
     <pre><code>chirp config --machine --market de-DE
 chirp install --machine
 chirp apply --machine
@@ -123,9 +120,9 @@ const T = {
     "headline": "Jeden Morgen ein neues Bild.",
     "lede": "Chirp Wallpaper setzt das tägliche Bing-Bild als Desktop-Hintergrund und Sperrbildschirm, in 4K und mit der Geschichte dahinter. Kostenlos und Open Source. Keine Installation, kein Konto, keine Administratorrechte.",
     "dl-win": "Für Windows herunterladen",
-    "dl-linux": "Linux (GNOME)",
+    "dl-linux": "Linux (Kommandozeile)",
     "source": "Quellcode",
-    "early": "Frühe Version: Kommandozeilen-Programm. Die App mit Fenster folgt.",
+    "early": "Windows 10 und 11. Eine Datei, etwa 10 MB. Die GNOME-App folgt.",
     "what": "Was es kann",
     "f1h": "Desktop und Sperrbildschirm",
     "f1p": "Dasselbe Bild auf beiden, automatisch bei der Anmeldung und jede Stunde.",
@@ -136,9 +133,9 @@ const T = {
     "f4h": "Offline? Kein Problem",
     "f4p": "Wenn kein neues Bild geladen werden kann, ändert sich nichts. Die App merkt sich den Grund und zeigt ihn an.",
     "start": "Loslegen",
-    "start-p": "Herunterladen und einmal starten. Für den automatischen Wechsel:",
+    "start-p": "ChirpWallpaper.exe herunterladen und doppelklicken. Unter Einstellungen „Bei der Anmeldung automatisch starten“ einschalten: Die App wartet dann im Infobereich und wechselt das Bild jeden Tag. Eine Verknüpfung im Autostart-Ordner ist nicht nötig.",
     "schools": "Für Schulen und zurückgesetzte Rechner",
-    "schools-p": "Auf Rechnern, die bei jedem Start auf einen eingefrorenen Stand zurückgehen, richtest du das Image einmal als Administrator ein. Einstellungen und Aufgaben bleiben, die Bilder werden bei jedem Start neu geladen. Ohne Internet erscheint das Basisbild vom Einrichten.",
+    "schools-p": "Auf Rechnern, die bei jedem Start auf einen eingefrorenen Stand zurückgehen, richtest du das Image einmal ein: Einstellungen → „Für alle Benutzer einrichten“. Die App wird nach „Programme“ kopiert, Sperr- und Anmeldebildschirm bekommen das Bild für alle, und das heutige Bild wird zum Basisbild für Tage ohne Internet. Admins können dasselbe mit dem Kommandozeilen-Programm erledigen.",
     "footer": "Chirp Wallpaper steht in keiner Verbindung zu Microsoft. Bilder und Texte stammen von Bing und gehören den Fotografinnen und Fotografen. MIT-Lizenz."
   }
 };

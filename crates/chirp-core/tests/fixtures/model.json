@@ -8,7 +8,16 @@
         "Headline": "Möwen über den Hügeln",
         "Title": "Hügel bei Sonnenaufgang, Beispielland",
         "Copyright": "© Beispiel Fotografin/Beispiel Agentur",
-        "QuickFact": { "MainText": "", "LinkUrl": "", "LinkText": "" }
+        "QuickFact": {
+          "MainText": "",
+          "LinkUrl": "",
+          "LinkText": ""
+        },
+        "Image": {
+          "Url": "/th?id=OHR.SampleHills_DE-DE123_1920x1080.webp",
+          "Wallpaper": "",
+          "Downloadable": true
+        }
       }
     }
   ]

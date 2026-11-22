@@ -3,14 +3,10 @@
 //! Runs without installation and without administrator rights. Only the
 //! `--machine` variants (all users, reset school machines) need them.
 
-mod i18n;
-mod platform;
-
 use chirp_core::apply::{baseline, seal, seal_custom};
 use chirp_core::{Config, Outcome, Paths, Resolution, State, Target};
+use chirp_native::{platform, InstallError, Localizer};
 use clap::{Parser, Subcommand, ValueEnum};
-use i18n::Localizer;
-use platform::InstallError;
 use std::path::PathBuf;
 use std::process::ExitCode;
 

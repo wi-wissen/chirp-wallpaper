@@ -1,0 +1,30 @@
+[package]
+name = "chirp-native"
+description = "Platform backends (Windows, GNOME) and translations shared by the Chirp Wallpaper programs."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+chirp-core = { path = "../chirp-core" }
+fluent-bundle = "0.15"
+unic-langid = "0.9"
+sys-locale = "0.3"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"
+windows = { version = "0.58", features = [
+    "Foundation",
+    "Storage",
+    "Storage_Streams",
+    "System_UserProfile",
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Shell",
+    "Win32_System_Com",
+] }
+
+[dev-dependencies]
+fluent-syntax = "0.11"

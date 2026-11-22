@@ -49,10 +49,19 @@ jobs:
         include:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
+            asset: ChirpWallpaper.exe
+            package: chirp-app
+            binary: ChirpWallpaper.exe
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
             asset: chirp-windows-x64.exe
+            package: chirp
+            binary: chirp.exe
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             asset: chirp-linux-x86_64.tar.gz
+            package: chirp
+            binary: chirp
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,16 +74,16 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: sed -i.bak "0,/^version = \".*\"/s//version = \"$VERSION\"/" Cargo.toml && rm Cargo.toml.bak
-      - run: cargo build --release --target ${{ matrix.target }} -p chirp
+      - run: cargo build --release --target ${{ matrix.target }} -p ${{ matrix.package }}
       - name: Package (Windows)
         if: runner.os == 'Windows'
         shell: bash
-        run: cp target/${{ matrix.target }}/release/chirp.exe ${{ matrix.asset }}
+        run: cp target/${{ matrix.target }}/release/${{ matrix.binary }} ${{ matrix.asset }}
       - name: Package (Linux)
         if: runner.os == 'Linux'
         run: |
           mkdir chirp-wallpaper
-          cp target/${{ matrix.target }}/release/chirp README.md LICENSE chirp-wallpaper/
+          cp target/${{ matrix.target }}/release/${{ matrix.binary }} README.md LICENSE chirp-wallpaper/
           tar czf ${{ matrix.asset }} chirp-wallpaper
       - uses: actions/upload-artifact@v4
         with:

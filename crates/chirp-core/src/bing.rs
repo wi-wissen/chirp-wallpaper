@@ -24,6 +24,10 @@ struct Archive {
 #[derive(Debug, Deserialize)]
 struct ArchiveImage {
     startdate: String,
+    /// Start time in UTC, `YYYYMMDDHHMM`, e.g. `202611212300` for the German
+    /// picture of 22 November (midnight in Germany).
+    #[serde(default)]
+    fullstartdate: String,
     urlbase: String,
     #[serde(default)]
     copyright: String,
@@ -52,11 +56,20 @@ struct MediaContent {
 #[serde(rename_all = "PascalCase")]
 struct ImageContent {
     #[serde(default)]
+    image: Option<ImageRef>,
+    #[serde(default)]
     title: Option<String>,
     #[serde(default)]
     headline: Option<String>,
     #[serde(default)]
     description: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct ImageRef {
+    #[serde(default)]
+    url: String,
 }
 
 /// Parse the answer of `HPImageArchive.aspx?format=js`.
@@ -75,7 +88,8 @@ fn picture_from_archive(
     market: &str,
     resolution: Resolution,
 ) -> Result<Picture> {
-    let date = format_date(&img.startdate)
+    let date = local_date(&img.fullstartdate)
+        .or_else(|| format_date(&img.startdate))
         .ok_or_else(|| Error::Format(format!("unknown date '{}'", img.startdate)))?;
     if img.urlbase.is_empty() {
         return Err(Error::Format("picture without address".into()));
@@ -105,22 +119,34 @@ fn picture_from_archive(
         info_url,
         image_url,
         fallback_url,
+        thumb_url: Some(format!("{base}_400x240.jpg")),
         note: None,
     })
 }
 
 /// Add the description from `hp/api/model` to the matching picture.
+///
+/// The details endpoint does not always answer for the requested market's
+/// current picture, so it is matched by the picture's name (`OHR.<Name>_…`)
+/// and only by date when no image address is given.
 pub fn merge_details(pictures: &mut [Picture], model_json: &str) -> Result<()> {
     let model: Model =
         serde_json::from_str(model_json).map_err(|e| Error::Format(format!("details: {e}")))?;
     for content in model.media_contents {
-        let Some(date) = format_date(&content.ssd) else {
-            continue;
-        };
-        let Some(pic) = pictures.iter_mut().find(|p| p.date == date) else {
-            continue;
-        };
         let ic = content.image_content;
+        let name = ic.image.as_ref().and_then(|i| image_name(&i.url));
+        let pic = match name {
+            Some(name) => pictures
+                .iter_mut()
+                .find(|p| image_name(&p.image_url).as_deref() == Some(name.as_str())),
+            None => {
+                let Some(date) = format_date(&content.ssd) else {
+                    continue;
+                };
+                pictures.iter_mut().find(|p| p.date == date)
+            }
+        };
+        let Some(pic) = pic else { continue };
         if let Some(d) = ic.description.filter(|d| !d.trim().is_empty()) {
             pic.description = Some(d.trim().to_string());
         }
@@ -132,6 +158,30 @@ pub fn merge_details(pictures: &mut [Picture], model_json: &str) -> Result<()> {
         }
     }
     Ok(())
+}
+
+/// `…?id=OHR.JustaHermitage_DE-DE4182731523_UHD.jpg` → `OHR.JustaHermitage`.
+fn image_name(url: &str) -> Option<String> {
+    let start = url.find("OHR.")?;
+    let rest = &url[start..];
+    let end = rest.find('_').unwrap_or(rest.len());
+    Some(rest[..end].to_string())
+}
+
+/// The day a picture is shown on: its UTC start time plus twelve hours lands
+/// on the local calendar day for every market (Europe starts at 23:00 UTC of
+/// the previous day, America at 08:00 UTC, Asia at 15:00 UTC).
+fn local_date(fullstartdate: &str) -> Option<String> {
+    if fullstartdate.len() < 12 || !fullstartdate.bytes().all(|b| b.is_ascii_digit()) {
+        return None;
+    }
+    let fmt = time::macros::format_description!("[year][month][day][hour][minute]");
+    let start = time::PrimitiveDateTime::parse(&fullstartdate[..12], fmt).ok()?;
+    let shown = start + time::Duration::hours(12);
+    shown
+        .date()
+        .format(time::macros::format_description!("[year]-[month]-[day]"))
+        .ok()
 }
 
 /// Fetch today's picture (with description, if available) for a market.
@@ -275,6 +325,25 @@ mod tests {
     fn rejects_garbage() {
         assert!(parse_archive("{}", "de-DE", Resolution::Uhd).is_err());
         assert!(parse_archive("not json", "de-DE", Resolution::Uhd).is_err());
+    }
+
+    #[test]
+    fn local_dates() {
+        assert_eq!(local_date("202611212300").as_deref(), Some("2026-11-22"));
+        assert_eq!(local_date("202611220800").as_deref(), Some("2026-11-22"));
+        assert_eq!(local_date("202611211500").as_deref(), Some("2026-11-22"));
+        assert_eq!(local_date(""), None);
+    }
+
+    #[test]
+    fn details_are_matched_by_picture_name() {
+        let mut pics = parse_archive(ARCHIVE, "de-DE", Resolution::Uhd).unwrap();
+        let other = r#"{"MediaContents":[{"Ssd":"20261122","ImageContent":{
+            "Image":{"Url":"/th?id=OHR.SomethingElse_EN-US1_1920x1080.webp"},
+            "Description":"Wrong picture","Headline":"Wrong","Title":"Wrong"}}]}"#;
+        merge_details(&mut pics, other).unwrap();
+        assert!(pics[0].description.is_none());
+        assert_eq!(pics[0].title, "Möwen über den Hügeln");
     }
 
     #[test]

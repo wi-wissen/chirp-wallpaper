@@ -1,0 +1,667 @@
+// Chirp Wallpaper: main window.
+// Windows 11 look via Slint's "fluent" style; follows light and dark mode.
+// All visible text comes from the `Tr` global, filled from the Fluent files.
+
+import { Button, Switch, ComboBox, ScrollView, Palette } from "std-widgets.slint";
+
+export global Tr {
+    in property <string> nav-today: "Today";
+    in property <string> nav-history: "History";
+    in property <string> nav-settings: "Settings";
+    in property <string> nav-about: "About";
+    in property <string> today-update: "Update now";
+    in property <string> today-more: "Learn more";
+    in property <string> today-copy: "Copy text";
+    in property <string> today-show-file: "Show file";
+    in property <string> today-empty: "No picture yet.";
+    in property <string> history-empty: "Pictures of the last days appear here.";
+    in property <string> history-use: "Use";
+    in property <string> settings-general: "General";
+    in property <string> settings-autostart: "Start with Windows";
+    in property <string> settings-autostart-desc: "";
+    in property <string> settings-desktop: "Desktop background";
+    in property <string> settings-lockscreen: "Lock screen";
+    in property <string> settings-lockscreen-desc: "";
+    in property <string> settings-picture: "Picture";
+    in property <string> settings-region: "Picture region";
+    in property <string> settings-region-desc: "";
+    in property <string> settings-resolution: "Resolution";
+    in property <string> settings-pause: "Pause picture changes";
+    in property <string> settings-pause-desc: "";
+    in property <string> settings-admin: "All users";
+    in property <string> settings-admin-title: "Set up for all users";
+    in property <string> settings-admin-desc: "";
+    in property <string> settings-admin-button: "Set up …";
+    in property <string> label-baseline: "Baseline picture";
+    in property <string> about-text: "";
+    in property <string> about-website: "Website";
+    in property <string> about-source: "Source code";
+}
+
+export struct HistoryItem {
+    thumb: image,
+    title: string,
+    date: string,
+    col: int,
+    row: int,
+}
+
+component Icon inherits Path {
+    width: 16px;
+    height: 16px;
+    viewbox-width: 16;
+    viewbox-height: 16;
+    stroke: Palette.foreground;
+    stroke-width: 1.3px;
+    fill: transparent;
+}
+
+component NavItem inherits Rectangle {
+    in property <string> text;
+    in property <bool> selected;
+    in property <string> icon;
+    callback clicked;
+    height: 36px;
+    border-radius: 4px;
+    background: root.selected ? Palette.foreground.transparentize(0.92) : touch.has-hover ? Palette.foreground.transparentize(0.95) : transparent;
+    accessible-role: button;
+    accessible-label: root.text;
+    if root.selected: Rectangle {
+        x: 0;
+        y: 10px;
+        width: 3px;
+        height: parent.height - 20px;
+        border-radius: 1.5px;
+        background: Palette.accent-background;
+    }
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 12px;
+        alignment: start;
+        Icon {
+            y: (parent.height - self.height) / 2;
+            commands: root.icon;
+        }
+        Text {
+            text: root.text;
+            vertical-alignment: center;
+            font-size: 14px;
+            color: Palette.foreground;
+        }
+    }
+    touch := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+component Card inherits Rectangle {
+    background: Palette.control-background;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: Palette.border;
+}
+
+component Row inherits HorizontalLayout {
+    in property <string> title;
+    in property <string> description;
+    padding: 14px;
+    padding-left: 18px;
+    padding-right: 18px;
+    spacing: 16px;
+    VerticalLayout {
+        alignment: center;
+        horizontal-stretch: 1;
+        Text {
+            text: root.title;
+            font-size: 14px;
+            color: Palette.foreground;
+            wrap: word-wrap;
+        }
+        if root.description != "": Text {
+            text: root.description;
+            font-size: 12px;
+            color: Palette.foreground.transparentize(0.35);
+            wrap: word-wrap;
+        }
+    }
+    @children
+}
+
+component SectionTitle inherits Text {
+    font-size: 14px;
+    font-weight: 600;
+    color: Palette.foreground;
+}
+
+export component AppWindow inherits Window {
+    title: "Chirp Wallpaper";
+    icon: @image-url("../../../assets/icon-64.png");
+    preferred-width: 1040px;
+    preferred-height: 700px;
+    min-width: 760px;
+    min-height: 520px;
+    background: Palette.background;
+
+    in-out property <int> page: 0;
+    in property <string> version;
+    in property <bool> is-windows: true;
+
+    // Today
+    in property <bool> has-picture;
+    in property <image> picture;
+    in property <string> pic-title;
+    in property <string> pic-caption;
+    in property <string> pic-meta;
+    in property <string> pic-copyright;
+    in property <string> pic-description;
+    in property <bool> has-info-url;
+    in property <string> status-text;
+    in property <bool> status-is-error;
+    in property <bool> busy;
+    in property <string> baseline-text;
+
+    // History
+    in property <[HistoryItem]> history;
+
+    // Settings
+    in-out property <bool> autostart;
+    in-out property <bool> desktop;
+    in-out property <bool> lockscreen;
+    in property <[string]> regions;
+    in-out property <int> region-index;
+    in property <[string]> resolutions: ["4K (UHD)", "Full HD (1080p)"];
+    in-out property <int> resolution-index;
+    in property <[string]> pause-options;
+    in-out property <int> pause-index;
+
+    in property <string> toast;
+
+    callback update-now();
+    callback open-info();
+    callback copy-text();
+    callback show-file();
+    callback use-history(int);
+    callback settings-changed();
+    callback pause-changed();
+    callback setup-machine();
+    callback open-website();
+    callback open-source();
+
+    HorizontalLayout {
+        // Navigation
+        Rectangle {
+            width: 240px;
+            background: Palette.alternate-background;
+            VerticalLayout {
+                padding: 8px;
+                spacing: 2px;
+                HorizontalLayout {
+                    padding: 10px;
+                    padding-bottom: 14px;
+                    spacing: 10px;
+                    Image {
+                        source: @image-url("../../../assets/icon-32.png");
+                        width: 24px;
+                        height: 24px;
+                    }
+                    Text {
+                        text: "Chirp Wallpaper";
+                        font-size: 14px;
+                        font-weight: 600;
+                        vertical-alignment: center;
+                        color: Palette.foreground;
+                    }
+                }
+                NavItem {
+                    text: Tr.nav-today;
+                    selected: root.page == 0;
+                    icon: "M 1.5 2.5 L 14.5 2.5 L 14.5 11.5 L 1.5 11.5 Z M 5 14 L 11 14";
+                    clicked => {
+                        root.page = 0;
+                    }
+                }
+                NavItem {
+                    text: Tr.nav-history;
+                    selected: root.page == 1;
+                    icon: "M 1.5 1.5 L 7 1.5 L 7 7 L 1.5 7 Z M 9 1.5 L 14.5 1.5 L 14.5 7 L 9 7 Z M 1.5 9 L 7 9 L 7 14.5 L 1.5 14.5 Z M 9 9 L 14.5 9 L 14.5 14.5 L 9 14.5 Z";
+                    clicked => {
+                        root.page = 1;
+                    }
+                }
+                NavItem {
+                    text: Tr.nav-settings;
+                    selected: root.page == 2;
+                    icon: "M 8 5.5 A 2.5 2.5 0 1 1 7.99 5.5 Z M 8 1 L 8 3 M 8 13 L 8 15 M 1 8 L 3 8 M 13 8 L 15 8 M 3 3 L 4.4 4.4 M 11.6 11.6 L 13 13 M 3 13 L 4.4 11.6 M 11.6 4.4 L 13 3";
+                    clicked => {
+                        root.page = 2;
+                    }
+                }
+                Rectangle { }
+                NavItem {
+                    text: Tr.nav-about;
+                    selected: root.page == 3;
+                    icon: "M 8 1.5 A 6.5 6.5 0 1 1 7.99 1.5 Z M 8 7 L 8 11.5 M 8 4.6 L 8 4.8";
+                    clicked => {
+                        root.page = 3;
+                    }
+                }
+            }
+        }
+
+        // Content
+        Rectangle {
+            horizontal-stretch: 1;
+
+            // Today
+            if root.page == 0: sv0 := ScrollView {
+                content-width: self.visible-width;
+                content-height: today.preferred-height;
+                today := VerticalLayout {
+                    width: sv0.visible-width;
+                    padding: 32px;
+                    padding-top: 24px;
+                    spacing: 16px;
+                    Text {
+                        text: Tr.nav-today;
+                        font-size: 28px;
+                        font-weight: 600;
+                        color: Palette.foreground;
+                    }
+                    HorizontalLayout {
+                        spacing: 24px;
+                        Rectangle {
+                            width: 360px;
+                            height: 203px;
+                            border-radius: 8px;
+                            clip: true;
+                            background: Palette.alternate-background;
+                            if root.has-picture: Image {
+                                width: parent.width;
+                                height: parent.height;
+                                source: root.picture;
+                                image-fit: cover;
+                            }
+                            if !root.has-picture: Text {
+                                text: Tr.today-empty;
+                                wrap: word-wrap;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                                width: parent.width - 32px;
+                                color: Palette.foreground.transparentize(0.35);
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: end;
+                            spacing: 6px;
+                            horizontal-stretch: 1;
+                            Text {
+                                text: root.pic-meta;
+                                font-size: 12px;
+                                color: Palette.foreground.transparentize(0.35);
+                            }
+                            Text {
+                                text: root.pic-title;
+                                font-size: 22px;
+                                font-weight: 600;
+                                wrap: word-wrap;
+                                color: Palette.foreground;
+                            }
+                            if root.pic-caption != "": Text {
+                                text: root.pic-caption;
+                                font-size: 14px;
+                                wrap: word-wrap;
+                                color: Palette.foreground;
+                            }
+                            if root.pic-copyright != "": Text {
+                                text: root.pic-copyright;
+                                font-size: 12px;
+                                wrap: word-wrap;
+                                color: Palette.foreground.transparentize(0.35);
+                            }
+                        }
+                    }
+                    HorizontalLayout {
+                        padding-top: 0px;
+                        spacing: 8px;
+                        alignment: start;
+                        Button {
+                            text: Tr.today-update;
+                            primary: true;
+                            enabled: !root.busy;
+                            clicked => {
+                                root.update-now();
+                            }
+                        }
+                        if root.has-info-url: Button {
+                            text: Tr.today-more;
+                            clicked => {
+                                root.open-info();
+                            }
+                        }
+                        if root.has-picture: Button {
+                            text: Tr.today-copy;
+                            clicked => {
+                                root.copy-text();
+                            }
+                        }
+                        if root.has-picture: Button {
+                            text: Tr.today-show-file;
+                            clicked => {
+                                root.show-file();
+                            }
+                        }
+                    }
+                    if root.status-text != "": Rectangle {
+                        border-radius: 6px;
+                        background: root.status-is-error ? #f6a10022 : Palette.accent-background.transparentize(0.85);
+                        HorizontalLayout {
+                            padding: 12px;
+                            padding-left: 16px;
+                            Text {
+                                text: root.status-text;
+                                wrap: word-wrap;
+                                font-size: 13px;
+                                color: Palette.foreground;
+                            }
+                        }
+                    }
+                    if root.pic-description != "": Card {
+                        VerticalLayout {
+                            padding: 18px;
+                            Text {
+                                text: root.pic-description;
+                                wrap: word-wrap;
+                                font-size: 14px;
+                                color: Palette.foreground;
+                            }
+                        }
+                    }
+                    if root.baseline-text != "": Text {
+                        text: root.baseline-text;
+                        font-size: 12px;
+                        wrap: word-wrap;
+                        color: Palette.foreground.transparentize(0.35);
+                    }
+                }
+            }
+
+            // History
+            if root.page == 1: Rectangle {
+                property <length> gap: 12px;
+                property <length> tile-w: (self.width - 64px - 2 * gap) / 3;
+                property <length> tile-h: tile-w * 9 / 16 + 56px;
+                VerticalLayout {
+                    padding: 32px;
+                    padding-top: 24px;
+                    spacing: 16px;
+                    Text {
+                        text: Tr.nav-history;
+                        font-size: 28px;
+                        font-weight: 600;
+                        color: Palette.foreground;
+                    }
+                    if root.history.length == 0: Text {
+                        text: Tr.history-empty;
+                        color: Palette.foreground.transparentize(0.35);
+                    }
+                    Flickable {
+                        content-height: (Math.ceil(root.history.length / 3) * (tile-h + gap));
+                        for item[i] in root.history: Card {
+                            x: item.col * (tile-w + gap);
+                            y: item.row * (tile-h + gap);
+                            width: tile-w;
+                            height: tile-h;
+                            clip: true;
+                            Image {
+                                x: 0;
+                                y: 0;
+                                width: parent.width;
+                                height: parent.width * 9 / 16;
+                                source: item.thumb;
+                                image-fit: cover;
+                            }
+                            HorizontalLayout {
+                                y: parent.width * 9 / 16;
+                                height: 56px;
+                                padding-left: 12px;
+                                padding-right: 8px;
+                                spacing: 8px;
+                                VerticalLayout {
+                                    alignment: center;
+                                    horizontal-stretch: 1;
+                                    Text {
+                                        text: item.title;
+                                        font-size: 13px;
+                                        overflow: elide;
+                                        color: Palette.foreground;
+                                    }
+                                    Text {
+                                        text: item.date;
+                                        font-size: 11px;
+                                        color: Palette.foreground.transparentize(0.35);
+                                    }
+                                }
+                                VerticalLayout {
+                                    alignment: center;
+                                    Button {
+                                        text: Tr.history-use;
+                                        clicked => {
+                                            root.use-history(i);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Settings
+            if root.page == 2: sv2 := ScrollView {
+                content-width: self.visible-width;
+                content-height: settings.preferred-height;
+                settings := VerticalLayout {
+                    width: sv2.visible-width;
+                    padding: 32px;
+                    padding-top: 24px;
+                    spacing: 6px;
+                    Text {
+                        text: Tr.nav-settings;
+                        font-size: 28px;
+                        font-weight: 600;
+                        color: Palette.foreground;
+                    }
+                    SectionTitle {
+                        text: Tr.settings-general;
+                    }
+                    Card {
+                        VerticalLayout {
+                            Row {
+                                title: Tr.settings-autostart;
+                                description: Tr.settings-autostart-desc;
+                                Switch {
+                                    checked <=> root.autostart;
+                                    toggled => {
+                                        root.settings-changed();
+                                    }
+                                }
+                            }
+                            Row {
+                                title: Tr.settings-desktop;
+                                Switch {
+                                    checked <=> root.desktop;
+                                    toggled => {
+                                        root.settings-changed();
+                                    }
+                                }
+                            }
+                            Row {
+                                title: Tr.settings-lockscreen;
+                                description: Tr.settings-lockscreen-desc;
+                                Switch {
+                                    checked <=> root.lockscreen;
+                                    toggled => {
+                                        root.settings-changed();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Rectangle {
+                        height: 10px;
+                    }
+                    SectionTitle {
+                        text: Tr.settings-picture;
+                    }
+                    Card {
+                        VerticalLayout {
+                            Row {
+                                title: Tr.settings-region;
+                                description: Tr.settings-region-desc;
+                                ComboBox {
+                                    width: 260px;
+                                    model: root.regions;
+                                    current-index <=> root.region-index;
+                                    selected => {
+                                        root.settings-changed();
+                                    }
+                                }
+                            }
+                            Row {
+                                title: Tr.settings-resolution;
+                                ComboBox {
+                                    width: 260px;
+                                    model: root.resolutions;
+                                    current-index <=> root.resolution-index;
+                                    selected => {
+                                        root.settings-changed();
+                                    }
+                                }
+                            }
+                            Row {
+                                title: Tr.settings-pause;
+                                description: Tr.settings-pause-desc;
+                                ComboBox {
+                                    width: 260px;
+                                    model: root.pause-options;
+                                    current-index <=> root.pause-index;
+                                    selected => {
+                                        root.pause-changed();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if root.is-windows: Rectangle {
+                        height: 10px;
+                    }
+                    if root.is-windows: SectionTitle {
+                        text: Tr.settings-admin;
+                    }
+                    if root.is-windows: Card {
+                        VerticalLayout {
+                            Row {
+                                title: Tr.settings-admin-title;
+                                description: Tr.settings-admin-desc;
+                                Button {
+                                    text: Tr.settings-admin-button;
+                                    enabled: !root.busy;
+                                    clicked => {
+                                        root.setup-machine();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if root.baseline-text != "": Text {
+                        text: root.baseline-text;
+                        font-size: 12px;
+                        wrap: word-wrap;
+                        color: Palette.foreground.transparentize(0.35);
+                    }
+                }
+            }
+
+            // About
+            if root.page == 3: VerticalLayout {
+                padding: 32px;
+                padding-top: 24px;
+                spacing: 16px;
+                alignment: start;
+                Text {
+                    text: Tr.nav-about;
+                    font-size: 28px;
+                    font-weight: 600;
+                    color: Palette.foreground;
+                }
+                HorizontalLayout {
+                    spacing: 16px;
+                    alignment: start;
+                    Image {
+                        source: @image-url("../../../assets/icon-64.png");
+                        width: 64px;
+                        height: 64px;
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Text {
+                            text: "Chirp Wallpaper";
+                            font-size: 20px;
+                            font-weight: 600;
+                            color: Palette.foreground;
+                        }
+                        Text {
+                            text: root.version;
+                            color: Palette.foreground.transparentize(0.35);
+                        }
+                    }
+                }
+                Text {
+                    text: Tr.about-text;
+                    wrap: word-wrap;
+                    color: Palette.foreground;
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: start;
+                    Button {
+                        text: Tr.about-website;
+                        clicked => {
+                            root.open-website();
+                        }
+                    }
+                    Button {
+                        text: Tr.about-source;
+                        clicked => {
+                            root.open-source();
+                        }
+                    }
+                }
+            }
+
+            // Short confirmation at the bottom
+            if root.toast != "": Rectangle {
+                y: parent.height - self.height - 20px;
+                x: (parent.width - self.width) / 2;
+                width: min(toast-text.preferred-width + 40px, parent.width - 40px);
+                height: toast-text.preferred-height + 20px;
+                border-radius: 6px;
+                background: Palette.foreground;
+                drop-shadow-blur: 12px;
+                drop-shadow-color: #00000040;
+                toast-text := Text {
+                    x: 20px;
+                    width: parent.width - 40px;
+                    text: root.toast;
+                    wrap: word-wrap;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    color: Palette.background;
+                }
+            }
+        }
+    }
+}
