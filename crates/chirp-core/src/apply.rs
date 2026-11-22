@@ -172,7 +172,7 @@ fn fallback(paths: &Paths) -> Option<(Picture, PathBuf)> {
             }
         }
     }
-    baseline(paths).map(|(p, f)| (p, f))
+    baseline(paths)
 }
 
 fn set_screens(cfg: &Config, platform: &dyn Platform, file: &Path) -> Vec<(Target, String)> {
