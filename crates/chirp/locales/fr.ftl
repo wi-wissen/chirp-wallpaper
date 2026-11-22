@@ -1,0 +1,24 @@
+# Chirp Wallpaper — Français (traduction initiale, à relire)
+updated = Nouvelle image définie : { $title }
+already-current = L’image est à jour : { $title }
+unchanged = Aucune nouvelle image n’a pu être chargée ({ $reason }). L’image actuelle est conservée.
+unchanged-kept = Toujours affichée : { $title } du { $date }.
+paused = Le changement d’image est suspendu jusqu’au { $date }.
+warning-desktop = Le fond d’écran n’a pas pu être modifié : { $reason }
+warning-lockscreen = L’écran de verrouillage n’a pas pu être modifié : { $reason }
+status-heading = Image actuelle
+label-date = Date
+label-region = Région
+label-copyright = Droits d’auteur
+label-more = En savoir plus
+label-last-success = Dernière mise à jour
+label-last-error = Dernière erreur
+label-baseline = Image de base
+none = aucune
+seal-done = Image de base enregistrée : { $title } ({ $date })
+install-done = Le changement automatique d’image est configuré.
+uninstall-done = Le changement automatique d’image est supprimé.
+config-saved = Paramètres enregistrés : { $file }
+needs-admin = Des droits d’administrateur sont nécessaires. Veuillez relancer en tant qu’administrateur.
+not-supported = Non disponible sur ce système.
+error = Erreur : { $reason }

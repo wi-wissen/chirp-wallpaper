@@ -1,0 +1,24 @@
+# Chirp Wallpaper — Български (първоначален превод, за преглед)
+updated = Зададено е ново изображение: { $title }
+already-current = Изображението е актуално: { $title }
+unchanged = Не може да се зареди ново изображение ({ $reason }). Текущото изображение остава.
+unchanged-kept = Все още на екрана: { $title } от { $date }.
+paused = Смяната на изображението е спряна до { $date }.
+warning-desktop = Фонът на работния плот не може да бъде променен: { $reason }
+warning-lockscreen = Заключеният екран не може да бъде променен: { $reason }
+status-heading = Текущо изображение
+label-date = Дата
+label-region = Регион
+label-copyright = Авторски права
+label-more = Научете повече
+label-last-success = Последно обновяване
+label-last-error = Последна грешка
+label-baseline = Основно изображение
+none = няма
+seal-done = Основното изображение е запазено: { $title } ({ $date })
+install-done = Автоматичната смяна на изображението е настроена.
+uninstall-done = Автоматичната смяна на изображението е премахната.
+config-saved = Настройките са запазени: { $file }
+needs-admin = Нужни са администраторски права. Моля, стартирайте отново като администратор.
+not-supported = Не е налично в тази система.
+error = Грешка: { $reason }

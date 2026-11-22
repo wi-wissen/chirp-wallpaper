@@ -1,0 +1,24 @@
+# Chirp Wallpaper — Српски (ћирилица) (почетни превод, за проверу)
+updated = Постављена је нова слика: { $title }
+already-current = Слика је ажурна: { $title }
+unchanged = Нова слика није могла да се учита ({ $reason }). Тренутна слика остаје.
+unchanged-kept = И даље на екрану: { $title } од { $date }.
+paused = Промена слике је паузирана до { $date }.
+warning-desktop = Позадина радне површине није могла да се промени: { $reason }
+warning-lockscreen = Закључани екран није могао да се промени: { $reason }
+status-heading = Тренутна слика
+label-date = Датум
+label-region = Регион
+label-copyright = Ауторска права
+label-more = Сазнајте више
+label-last-success = Последње ажурирање
+label-last-error = Последња грешка
+label-baseline = Основна слика
+none = нема
+seal-done = Основна слика је сачувана: { $title } ({ $date })
+install-done = Аутоматска промена слике је подешена.
+uninstall-done = Аутоматска промена слике је уклоњена.
+config-saved = Подешавања су сачувана: { $file }
+needs-admin = Потребна су администраторска права. Покрените поново као администратор.
+not-supported = Није доступно на овом систему.
+error = Грешка: { $reason }

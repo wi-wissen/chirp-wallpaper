@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chirp Wallpaper</title>
+<meta name="description" content="The daily Bing picture as desktop background and lock screen. Free, open source, no installation needed.">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root {
+  --sky: #7FB8DE; --dawn: #FFD7A6; --hill: #3E8A7E; --valley: #23645E;
+  --ink: #1C2F3C; --muted: #4E6170; --bg: #F4F7F8; --card: #FFFFFF; --line: #DCE4E9;
+  --accent: #0E6A86;
+  --display: "Fredoka", "Segoe UI", system-ui, sans-serif;
+  --body: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --ink: #E6EEF2; --muted: #A3B6C2; --bg: #10191F; --card: #172430; --line: #263744; --accent: #7CC6E0; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body); }
+a { color: var(--accent); }
+.wrap { max-width: 980px; margin: 0 auto; padding-inline: 20px; }
+header.hero { position: relative; overflow: hidden; color: #10202B; }
+header.hero svg.scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+header.hero .wrap { position: relative; padding-block: 56px 160px; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand img { width: 56px; height: 56px; }
+.brand span { font: 600 28px/1 var(--display); }
+h1 { font: 600 clamp(2.2rem, 6vw, 3.6rem)/1.05 var(--display); margin: 40px 0 16px; max-width: 16ch; text-wrap: balance; }
+.lede { font-size: 1.15rem; max-width: 52ch; margin: 0 0 28px; }
+.buttons { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 10px; font-weight: 600; text-decoration: none; }
+.btn.primary { background: #1C2F3C; color: #FFFFFF; }
+.btn.secondary { background: rgba(255,255,255,0.75); color: #1C2F3C; }
+.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.small { font-size: 0.9rem; color: var(--muted); }
+header .small { color: #2A3F4C; margin-top: 12px; }
+main section { padding-block: 48px 8px; }
+h2 { font: 600 1.8rem/1.2 var(--display); margin: 0 0 20px; }
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+.card h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.card p { margin: 0; color: var(--muted); }
+pre { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-size: 0.9rem; }
+code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
+footer { padding-block: 48px; color: var(--muted); font-size: 0.9rem; }
+.lang { position: absolute; top: 16px; right: 20px; }
+.lang select { font: inherit; padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.2); background: rgba(255,255,255,0.8); color: #1C2F3C; }
+</style>
+</head>
+<body>
+<header class="hero">
+  <svg class="scene" viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7FB8DE"/><stop offset="0.78" stop-color="#FFD7A6"/></linearGradient></defs>
+    <rect width="160" height="100" fill="url(#sky)"/>
+    <circle cx="118" cy="70" r="10" fill="#FFF3DC"/>
+    <path d="M0 78 Q40 66 80 74 T160 70 V100 H0Z" fill="#3E8A7E"/>
+    <path d="M0 90 Q48 80 96 88 T160 84 V100 H0Z" fill="#23645E"/>
+    <g fill="#1C2F3C">
+      <path d="M104 26 Q109 19 115 24 Q121 19 126 26 Q121 22 115 27 Q109 22 104 26Z"/>
+      <path d="M128 16 Q131 12 134 15 Q137 12 140 16 Q137 14 134 17 Q131 14 128 16Z"/>
+      <path d="M131 34 Q133.5 31 136 33 Q138.5 31 141 34 Q138.5 32.5 136 34.5 Q133.5 32.5 131 34Z"/>
+    </g>
+  </svg>
+  <label class="lang"><span class="sr" hidden>Language</span>
+    <select id="lang" aria-label="Language">
+      <option value="en">English</option>
+      <option value="de">Deutsch</option>
+    </select>
+  </label>
+  <div class="wrap">
+    <div class="brand"><img src="logo.svg" alt=""><span>chirp wallpaper</span></div>
+    <h1 data-i18n="headline">A new picture every morning.</h1>
+    <p class="lede" data-i18n="lede">Chirp Wallpaper sets the daily Bing picture as your desktop background and lock screen, in 4K, with the story behind it. Free and open source. No installation, no account, no administrator rights.</p>
+    <div class="buttons">
+      <a class="btn primary" href="https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/chirp-windows-x64.exe" data-i18n="dl-win">Download for Windows</a>
+      <a class="btn secondary" href="https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/chirp-linux-x86_64.tar.gz" data-i18n="dl-linux">Linux (GNOME)</a>
+      <a class="btn secondary" href="https://github.com/wi-wissen/chirp-wallpaper" data-i18n="source">Source code</a>
+    </div>
+    <p class="small" data-i18n="early">Early version: command line program. The app with a window follows.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section>
+    <h2 data-i18n="what">What it does</h2>
+    <div class="grid">
+      <div class="card"><h3 data-i18n="f1h">Desktop and lock screen</h3><p data-i18n="f1p">The same picture on both, changed automatically at sign-in and every hour.</p></div>
+      <div class="card"><h3 data-i18n="f2h">The story behind it</h3><p data-i18n="f2p">Title, place, copyright and a short text about every picture, with a link to learn more.</p></div>
+      <div class="card"><h3 data-i18n="f3h">In your language</h3><p data-i18n="f3p">21 languages. Bing pictures and texts follow your region, e.g. German texts for Germany.</p></div>
+      <div class="card"><h3 data-i18n="f4h">Offline? No problem</h3><p data-i18n="f4p">If no new picture can be loaded, nothing changes. The app remembers why and tells you.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 data-i18n="start">Get started</h2>
+    <p data-i18n="start-p">Download, then run once. To change the picture automatically:</p>
+    <pre><code>chirp apply
+chirp install
+chirp status</code></pre>
+  </section>
+
+  <section>
+    <h2 data-i18n="schools">For schools and reset computers</h2>
+    <p data-i18n="schools-p">On computers that return to a frozen state at every start, prepare the image once as administrator. The settings and tasks stay; pictures are loaded again at every start. Without internet, the baseline picture saved during preparation is shown.</p>
+    <pre><code>chirp config --machine --market de-DE
+chirp install --machine
+chirp apply --machine
+chirp seal --machine</code></pre>
+  </section>
+</main>
+
+<footer class="wrap">
+  <p data-i18n="footer">Chirp Wallpaper is not affiliated with Microsoft. Pictures and texts come from Bing and belong to their photographers. MIT licence.</p>
+</footer>
+
+<script>
+const T = {
+  de: {
+    "headline": "Jeden Morgen ein neues Bild.",
+    "lede": "Chirp Wallpaper setzt das tägliche Bing-Bild als Desktop-Hintergrund und Sperrbildschirm, in 4K und mit der Geschichte dahinter. Kostenlos und Open Source. Keine Installation, kein Konto, keine Administratorrechte.",
+    "dl-win": "Für Windows herunterladen",
+    "dl-linux": "Linux (GNOME)",
+    "source": "Quellcode",
+    "early": "Frühe Version: Kommandozeilen-Programm. Die App mit Fenster folgt.",
+    "what": "Was es kann",
+    "f1h": "Desktop und Sperrbildschirm",
+    "f1p": "Dasselbe Bild auf beiden, automatisch bei der Anmeldung und jede Stunde.",
+    "f2h": "Die Geschichte dahinter",
+    "f2p": "Titel, Ort, Copyright und ein kurzer Text zu jedem Bild, mit Link zum Weiterlesen.",
+    "f3h": "In deiner Sprache",
+    "f3p": "21 Sprachen. Bilder und Texte von Bing folgen deiner Region, z. B. deutsche Texte für Deutschland.",
+    "f4h": "Offline? Kein Problem",
+    "f4p": "Wenn kein neues Bild geladen werden kann, ändert sich nichts. Die App merkt sich den Grund und zeigt ihn an.",
+    "start": "Loslegen",
+    "start-p": "Herunterladen und einmal starten. Für den automatischen Wechsel:",
+    "schools": "Für Schulen und zurückgesetzte Rechner",
+    "schools-p": "Auf Rechnern, die bei jedem Start auf einen eingefrorenen Stand zurückgehen, richtest du das Image einmal als Administrator ein. Einstellungen und Aufgaben bleiben, die Bilder werden bei jedem Start neu geladen. Ohne Internet erscheint das Basisbild vom Einrichten.",
+    "footer": "Chirp Wallpaper steht in keiner Verbindung zu Microsoft. Bilder und Texte stammen von Bing und gehören den Fotografinnen und Fotografen. MIT-Lizenz."
+  }
+};
+const english = {};
+document.querySelectorAll("[data-i18n]").forEach(el => english[el.dataset.i18n] = el.textContent);
+function setLang(lang) {
+  const dict = T[lang] || {};
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    el.textContent = dict[el.dataset.i18n] || english[el.dataset.i18n];
+  });
+  document.getElementById("lang").value = T[lang] ? lang : "en";
+}
+let saved = null;
+try { saved = localStorage.getItem("lang"); } catch (e) {}
+const browser = (navigator.languages || [navigator.language || "en"]).map(l => l.slice(0, 2).toLowerCase()).find(l => T[l] || l === "en") || "en";
+setLang(saved || browser);
+document.getElementById("lang").addEventListener("change", e => {
+  setLang(e.target.value);
+  try { localStorage.setItem("lang", e.target.value); } catch (err) {}
+});
+</script>
+</body>
+</html>

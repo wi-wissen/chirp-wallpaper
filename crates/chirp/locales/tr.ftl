@@ -1,0 +1,24 @@
+# Chirp Wallpaper — Türkçe (ilk çeviri, gözden geçirilmeli)
+updated = Yeni resim ayarlandı: { $title }
+already-current = Resim güncel: { $title }
+unchanged = Yeni resim yüklenemedi ({ $reason }). Mevcut resim kalıyor.
+unchanged-kept = Ekranda kalmaya devam ediyor: { $title } ({ $date }).
+paused = Resim değişimi { $date } tarihine kadar duraklatıldı.
+warning-desktop = Masaüstü arka planı değiştirilemedi: { $reason }
+warning-lockscreen = Kilit ekranı değiştirilemedi: { $reason }
+status-heading = Mevcut resim
+label-date = Tarih
+label-region = Bölge
+label-copyright = Telif hakkı
+label-more = Daha fazla bilgi
+label-last-success = Son güncelleme
+label-last-error = Son hata
+label-baseline = Temel resim
+none = yok
+seal-done = Temel resim kaydedildi: { $title } ({ $date })
+install-done = Otomatik resim değişimi ayarlandı.
+uninstall-done = Otomatik resim değişimi kaldırıldı.
+config-saved = Ayarlar kaydedildi: { $file }
+needs-admin = Bunun için yönetici hakları gerekiyor. Lütfen yönetici olarak yeniden çalıştırın.
+not-supported = Bu sistemde kullanılamaz.
+error = Hata: { $reason }
