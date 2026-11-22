@@ -36,7 +36,6 @@ export global Tr {
     in property <string> admin-step-copy: "";
     in property <string> admin-step-lock: "";
     in property <string> admin-step-signin: "";
-    in property <string> admin-step-baseline: "";
     in property <string> admin-confirm-uac: "";
     in property <string> admin-confirm-ok: "Continue";
     in property <string> cancel: "Cancel";
@@ -714,7 +713,7 @@ export component AppWindow inherits Window {
                     wrap: word-wrap;
                     color: Palette.foreground;
                 }
-                for step in [Tr.admin-step-copy, Tr.admin-step-lock, Tr.admin-step-signin, Tr.admin-step-baseline]: HorizontalLayout {
+                for step in [Tr.admin-step-copy, Tr.admin-step-lock, Tr.admin-step-signin]: HorizontalLayout {
                     spacing: 8px;
                     Text {
                         text: "•";

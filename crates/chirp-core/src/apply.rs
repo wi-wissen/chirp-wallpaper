@@ -96,13 +96,13 @@ pub fn apply_with(
 
     let picture = match fetch(market, cfg.resolution) {
         Ok(p) => p,
-        Err(e) => return unchanged(paths, &mut state, e),
+        Err(e) => return unchanged(cfg, paths, platform, &mut state, e),
     };
 
     let already = state.current.as_ref().is_some_and(|c| c.id == picture.id);
     let file = match ensure_image(paths, &picture, download) {
         Ok(f) => f,
-        Err(e) => return unchanged(paths, &mut state, e),
+        Err(e) => return unchanged(cfg, paths, platform, &mut state, e),
     };
     write_json(&paths.meta_file(&picture), &picture)?;
     fetch_thumb(paths, &picture, download);
@@ -112,7 +112,7 @@ pub fn apply_with(
     if enabled > 0 && warnings.len() == enabled {
         // Nothing could be set at all: report it like a failed update.
         let reason = warnings[0].1.clone();
-        return unchanged(paths, &mut state, Error::Platform(reason));
+        return unchanged(cfg, paths, platform, &mut state, Error::Platform(reason));
     }
 
     state.current = Some(picture.clone());
@@ -129,15 +129,50 @@ pub fn apply_with(
     })
 }
 
-fn unchanged(paths: &Paths, state: &mut State, err: Error) -> Result<Outcome> {
+/// No new picture: leave the screen as it is. Only an account that has never
+/// had a picture (e.g. a new or reset profile that starts offline) gets the
+/// newest picture already on this computer, so it does not stay on the
+/// system default.
+fn unchanged(
+    cfg: &Config,
+    paths: &Paths,
+    platform: &dyn Platform,
+    state: &mut State,
+    err: Error,
+) -> Result<Outcome> {
     let reason = err.to_string();
     state.last_error = Some(reason.clone());
+    if state.current.is_none() {
+        if let Some((picture, file)) = fallback(paths) {
+            let warnings = set_screens(cfg, platform, &file);
+            let enabled = usize::from(cfg.desktop) + usize::from(cfg.lockscreen);
+            if enabled == 0 || warnings.len() < enabled {
+                state.current = Some(picture);
+                state.current_file = Some(file);
+            }
+        }
+    }
     state.save(&paths.state_file())?;
     let kept = state
         .current
         .clone()
         .or_else(|| baseline(paths).map(|(p, _)| p));
     Ok(Outcome::Unchanged { reason, kept })
+}
+
+/// The newest picture available without internet: the computer's shared
+/// picture (downloaded by the start-up task or kept in the frozen image),
+/// otherwise the baseline.
+fn fallback(paths: &Paths) -> Option<(Picture, PathBuf)> {
+    if paths.machine_data_dir != paths.data_dir {
+        let machine = State::load(&paths.machine_data_dir.join("state.json"));
+        if let (Some(p), Some(f)) = (machine.current, machine.current_file) {
+            if is_usable(&f) {
+                return Some((p, f));
+            }
+        }
+    }
+    baseline(paths).map(|(p, f)| (p, f))
 }
 
 fn set_screens(cfg: &Config, platform: &dyn Platform, file: &Path) -> Vec<(Target, String)> {
@@ -533,6 +568,43 @@ mod tests {
             Outcome::Unchanged { kept, .. } => assert_eq!(kept.unwrap().date, "2026-09-01"),
             other => panic!("unexpected {other:?}"),
         }
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn new_account_offline_gets_the_computers_picture() {
+        let dir = temp("freshuser");
+        let paths = Paths::in_dir(&dir);
+        // The start-up task (machine scope) downloaded a picture earlier.
+        let machine_img = paths.machine_data_dir.join("images/m.jpg");
+        std::fs::create_dir_all(machine_img.parent().unwrap()).unwrap();
+        std::fs::write(&machine_img, JPEG).unwrap();
+        let machine_state = State {
+            current: Some(sample("2026-11-20")),
+            current_file: Some(machine_img.clone()),
+            ..State::default()
+        };
+        machine_state
+            .save(&paths.machine_data_dir.join("state.json"))
+            .unwrap();
+
+        let platform = FakePlatform::default();
+        let offline = |_: &str, _: Resolution| Err(Error::Network("offline".into()));
+        let out = apply_with(
+            &Config::default(),
+            &paths,
+            &platform,
+            "de-DE",
+            "2026-11-22",
+            &offline,
+            &write_jpeg,
+        )
+        .unwrap();
+        match out {
+            Outcome::Unchanged { kept, .. } => assert_eq!(kept.unwrap().date, "2026-11-20"),
+            other => panic!("unexpected {other:?}"),
+        }
+        assert_eq!(platform.desktop.borrow().as_slice(), [machine_img]);
         std::fs::remove_dir_all(dir).unwrap();
     }
 

@@ -46,9 +46,12 @@ but lose everything downloaded later. While preparing the image, open the app an
 2. stores the region and resolution for the whole computer,
 3. adds a start-up task (and an hourly one) running as SYSTEM: it downloads the picture into
    `%ProgramData%\ChirpWallpaper` and sets the lock screen for everyone, also before sign-in (`PersonalizationCSP`),
-4. starts the app hidden at every user's sign-in, which sets that user's desktop from the shared download,
-5. loads today's picture and keeps it as **baseline**: without internet the screen keeps showing it,
-   and the app says which picture that is.
+4. starts the app hidden at every sign-in of every account, also new ones (nobody has to switch it on),
+   which sets that user's desktop from the shared download.
+
+Without internet nothing changes: the picture already on the computer stays (on a frozen computer, the one
+from the day the image was prepared). Accounts that never had a picture, e.g. new or reset profiles, get that
+same picture instead of the Windows default. The app tells which picture is shown and why.
 
 Network access needed: `www.bing.com` only.
 

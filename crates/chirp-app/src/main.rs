@@ -168,7 +168,6 @@ fn fill_texts(ui: &AppWindow, l: &Localizer) {
         set_admin_step_copy => "admin-step-copy",
         set_admin_step_lock => "admin-step-lock",
         set_admin_step_signin => "admin-step-signin",
-        set_admin_step_baseline => "admin-step-baseline",
         set_admin_confirm_uac => "admin-confirm-uac",
         set_admin_confirm_ok => "admin-confirm-ok",
         set_cancel => "cancel",

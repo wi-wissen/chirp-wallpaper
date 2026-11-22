@@ -78,7 +78,29 @@ fn set_hold(app: &adw::Application, hold: bool) {
 }
 
 fn autostart_enabled() -> bool {
-    platform::autostart_command(false).is_some_and(|c| c.contains("--background"))
+    if crate::portal::in_flatpak() {
+        crate::portal::autostart_enabled()
+    } else {
+        platform::autostart_command(false).is_some_and(|c| c.contains("--background"))
+    }
+}
+
+/// gsettings outside a Flatpak, the wallpaper portal inside.
+fn native_platform() -> Box<dyn chirp_core::Platform> {
+    if crate::portal::in_flatpak() {
+        Box::new(crate::portal::PortalPlatform)
+    } else {
+        Box::new(NativePlatform::new(false))
+    }
+}
+
+fn set_autostart(enable: bool, reason: &str) -> Result<(), String> {
+    if crate::portal::in_flatpak() {
+        return crate::portal::request_autostart(enable, reason);
+    }
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let cmd = platform::command_line(&exe, "--background");
+    platform::set_autostart(false, enable.then_some(cmd.as_str())).map_err(|e| e.to_string())
 }
 
 fn paths() -> Paths {
@@ -464,18 +486,17 @@ impl Ui {
                 if *ui.loading.borrow() {
                     return;
                 }
-                let result = match std::env::current_exe() {
-                    Ok(exe) if row.is_active() => platform::set_autostart(
-                        false,
-                        Some(&platform::command_line(&exe, "--background")),
-                    ),
-                    Ok(_) => platform::set_autostart(false, None),
-                    Err(e) => Err(e.into()),
-                };
-                if let Err(e) = result {
-                    ui.toast(&ui.l.t("error", &[("reason", &e.to_string())]));
-                }
-                set_hold(&app, autostart_enabled());
+                let reason = ui.l.t("settings-autostart-desc-gnome", &[]);
+                let active = row.is_active();
+                let ui2 = ui.clone();
+                let app2 = app.clone();
+                glib::spawn_future_local(async move {
+                    let result = gio::spawn_blocking(move || set_autostart(active, &reason)).await;
+                    if let Ok(Err(e)) = result {
+                        ui2.toast(&ui2.l.t("error", &[("reason", &e)]));
+                    }
+                    set_hold(&app2, autostart_enabled());
+                });
             });
         }
         {
@@ -698,7 +719,7 @@ impl Ui {
             return;
         };
         let cfg = effective_config();
-        match chirp_core::use_cached(&cfg, &paths(), &NativePlatform::new(false), &item) {
+        match chirp_core::use_cached(&cfg, &paths(), native_platform().as_ref(), &item) {
             Ok(_) => {
                 let mut user = user_config();
                 user.paused_until = ui::pause_until(2, &chirp_core::today());
@@ -722,7 +743,7 @@ impl Ui {
             let result = gio::spawn_blocking(|| {
                 let cfg = effective_config();
                 let market = cfg.resolved_market(sys_locale::get_locale().as_deref());
-                chirp_core::apply(&cfg, &paths(), &NativePlatform::new(false), &market)
+                chirp_core::apply(&cfg, &paths(), native_platform().as_ref(), &market)
                     .map_err(|e| e.to_string())
             })
             .await;
