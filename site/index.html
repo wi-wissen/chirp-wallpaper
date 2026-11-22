@@ -84,7 +84,7 @@ footer { padding-block: 48px; color: var(--muted); font-size: 0.9rem; }
       <a class="btn secondary" href="https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/ChirpWallpaper.flatpak" data-i18n="dl-linux">Linux (Flatpak)</a>
       <a class="btn secondary" href="https://github.com/wi-wissen/chirp-wallpaper" data-i18n="source">Source code</a>
     </div>
-    <p class="small" data-i18n="early">Windows 10 and 11: one file, about 10 MB. Linux: Flatpak for GNOME, Flathub is in preparation.</p>
+    <p class="small"><span data-i18n="early">Windows 10 and 11: one file, about 10 MB. Linux: Flatpak for GNOME.</span> <span id="version"></span></p>
   </div>
 </header>
 
@@ -132,7 +132,7 @@ const T = {
     "dl-win": "Für Windows herunterladen",
     "dl-linux": "Linux (Flatpak)",
     "source": "Quellcode",
-    "early": "Windows 10 und 11: eine Datei, etwa 10 MB. Linux: Flatpak für GNOME, Flathub ist in Vorbereitung.",
+    "early": "Windows 10 und 11: eine Datei, etwa 10 MB. Linux: Flatpak für GNOME.",
     "what": "Was es kann",
     "f1h": "Desktop und Sperrbildschirm",
     "f1p": "Dasselbe Bild auf beiden, automatisch bei der Anmeldung und jede Stunde.",
@@ -163,8 +163,22 @@ let saved = null;
 try { saved = localStorage.getItem("lang"); } catch (e) {}
 const browser = (navigator.languages || [navigator.language || "en"]).map(l => l.slice(0, 2).toLowerCase()).find(l => T[l] || l === "en") || "en";
 setLang(saved || browser);
+// Newest release from GitHub, e.g. "Version 0.2.0 · 22 Nov 2026". Stays empty if unavailable.
+let release = null;
+function showVersion() {
+  const el = document.getElementById("version");
+  if (!release) return;
+  const lang = document.documentElement.lang;
+  const date = new Date(release.published_at).toLocaleDateString(lang, { day: "numeric", month: "short", year: "numeric" });
+  el.textContent = "· Version " + release.tag_name.replace(/^v/, "") + " · " + date;
+}
+fetch("https://api.github.com/repos/wi-wissen/chirp-wallpaper/releases/latest")
+  .then(r => r.ok ? r.json() : null)
+  .then(data => { if (data && data.tag_name) { release = data; showVersion(); } })
+  .catch(() => {});
 document.getElementById("lang").addEventListener("change", e => {
   setLang(e.target.value);
+  showVersion();
   try { localStorage.setItem("lang", e.target.value); } catch (err) {}
 });
 </script>

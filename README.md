@@ -19,7 +19,7 @@ Free, open source (MIT), one small program: no installation, no account, no admi
 |---|---|
 | **Windows app** | [ChirpWallpaper.exe](https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/ChirpWallpaper.exe) |
 | Windows command line | [chirp-windows-x64.exe](https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/chirp-windows-x64.exe) |
-| **Linux app (GNOME), Flatpak** | [ChirpWallpaper.flatpak](https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/ChirpWallpaper.flatpak) (Flathub: planned) |
+| **Linux app (GNOME), Flatpak** | [ChirpWallpaper.flatpak](https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/ChirpWallpaper.flatpak) |
 | Linux command line | [chirp-linux-x86_64.tar.gz](https://github.com/wi-wissen/chirp-wallpaper/releases/latest/download/chirp-linux-x86_64.tar.gz) |
 
 ## Windows app
@@ -92,7 +92,7 @@ Settings are merged: defaults → machine → portable → user.
 ![GNOME app](site/screenshots/gnome-today.png)
 
 Install `ChirpWallpaper.flatpak` (double-click on Fedora and most GNOME systems; on Ubuntu, Flatpak has to be
-added first, see [flatpak/FLATHUB.md](flatpak/FLATHUB.md)). Publication on Flathub is prepared.
+added first, see [flatpak/FLATHUB.md](flatpak/FLATHUB.md)).
 
 The app follows GNOME conventions: a header bar with *Today*, *History* and *Settings*, a banner when no new
 picture could be loaded, selectable description text. GNOME has no tray icons, so with *Start automatically at
