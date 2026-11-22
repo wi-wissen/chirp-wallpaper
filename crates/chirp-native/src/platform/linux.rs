@@ -130,6 +130,10 @@ pub fn register_machine_tasks(_command: &str) -> std::result::Result<(), Install
     Err(InstallError::NotSupported)
 }
 
+pub fn remove_machine_lockscreen() -> std::result::Result<(), InstallError> {
+    Ok(())
+}
+
 pub fn remove_machine_tasks() -> std::result::Result<(), InstallError> {
     Err(InstallError::NotSupported)
 }

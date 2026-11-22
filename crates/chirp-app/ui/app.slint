@@ -23,6 +23,17 @@ export global Tr {
     in property <string> settings-caption-position: "Position of the description";
     in property <string> settings-save: "Keep pictures";
     in property <string> settings-save-desc: "";
+    in property <string> settings-data: "Data";
+    in property <string> settings-clear: "Remove stored data";
+    in property <string> settings-clear-desc: "";
+    in property <string> settings-clear-button: "Remove …";
+    in property <string> clear-confirm-title: "Remove stored data?";
+    in property <string> clear-confirm-text: "";
+    in property <string> settings-unsetup: "Remove setup for all users";
+    in property <string> settings-unsetup-desc: "";
+    in property <string> unsetup-confirm-title: "Remove setup for all users?";
+    in property <string> unsetup-confirm-text: "";
+    in property <string> remove-button: "Remove";
     in property <string> history-empty: "Pictures of the last days appear here.";
     in property <string> history-use: "Use";
     in property <string> settings-general: "General";
@@ -217,12 +228,17 @@ export component AppWindow inherits Window {
 
     in property <string> toast;
     in-out property <bool> confirm-admin;
+    // 1: remove my stored data, 2: remove the setup for all users
+    in-out property <int> confirm-remove;
+    in property <bool> machine-setup;
 
     callback update-now();
     callback open-info();
     callback use-history(int);
     callback open-history(int);
     callback display-changed();
+    callback clear-data();
+    callback remove-machine();
     callback settings-changed();
     callback pause-changed();
     callback setup-machine();
@@ -313,9 +329,11 @@ export component AppWindow inherits Window {
                     }
                     HorizontalLayout {
                         alignment: start;
-                        // Monitor-like frame, as in the mockup, at most 720 px wide
+                        // Monitor-like frame, as in the mockup. Its size follows the
+                        // window's width and height, so picture, text and buttons
+                        // are visible without scrolling; at most 720 px wide.
                         Rectangle {
-                            width: min(sv0.visible-width - 64px, 720px);
+                            width: min(min(sv0.visible-width - 64px, 720px), max(240px, (sv0.visible-height - 380px) * 16 / 9));
                             height: self.width * 9 / 16;
                             border-radius: 10px;
                             background: Palette.color-scheme == ColorScheme.dark ? #3a3a3a : #1b1b1b;
@@ -460,8 +478,8 @@ export component AppWindow inherits Window {
                 property <length> gap: 12px;
                 property <length> avail: self.width - 64px;
                 // Three columns when there is room, otherwise two or one.
-                property <int> cols: avail >= 720px ? 3 : avail >= 420px ? 2 : 1;
-                property <length> tile-w: (avail - (cols - 1) * gap) / cols;
+                property <int> cols: avail >= 800px ? 3 : avail >= 500px ? 2 : 1;
+                property <length> tile-w: min(420px, (avail - (cols - 1) * gap) / cols);
                 property <length> info-h: 108px;
                 property <length> tile-h: tile-w * 9 / 16 + info-h;
                 VerticalLayout {
@@ -523,11 +541,10 @@ export component AppWindow inherits Window {
                                             root.use-history(i);
                                         }
                                     }
-                                    // Icon only, so two buttons always fit; the name is in the tooltip text for screen readers.
                                     Button {
+                                        text: Tr.history-open;
                                         icon: @image-url("icons/open.svg");
                                         colorize-icon: true;
-                                        accessible-label: Tr.history-open;
                                         clicked => {
                                             root.open-history(i);
                                         }
@@ -721,6 +738,37 @@ export component AppWindow inherits Window {
                             }
                         }
                     }
+                    Rectangle {
+                        height: 10px;
+                    }
+                    SectionTitle {
+                        text: Tr.settings-data;
+                    }
+                    VerticalLayout {
+                        spacing: 4px;
+                        Row {
+                            title: Tr.settings-clear;
+                            description: Tr.settings-clear-desc;
+                            Button {
+                                text: Tr.settings-clear-button;
+                                enabled: !root.busy;
+                                clicked => {
+                                    root.confirm-remove = 1;
+                                }
+                            }
+                        }
+                        if root.is-windows && root.machine-setup: Row {
+                            title: Tr.settings-unsetup;
+                            description: Tr.settings-unsetup-desc;
+                            Button {
+                                text: Tr.settings-clear-button;
+                                enabled: !root.busy;
+                                clicked => {
+                                    root.confirm-remove = 2;
+                                }
+                            }
+                        }
+                    }
                     if root.baseline-text != "": Text {
                         text: root.baseline-text;
                         font-size: 12px;
@@ -871,6 +919,59 @@ export component AppWindow inherits Window {
                         clicked => {
                             root.confirm-admin = false;
                             root.setup-machine();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Ask before removing anything.
+    if root.confirm-remove != 0: Rectangle {
+        background: #00000060;
+        TouchArea { }
+        Rectangle {
+            width: min(520px, parent.width - 48px);
+            height: removal.preferred-height;
+            border-radius: 8px;
+            background: Palette.background;
+            drop-shadow-blur: 24px;
+            drop-shadow-color: #00000050;
+            removal := VerticalLayout {
+                padding: 24px;
+                spacing: 12px;
+                Text {
+                    text: root.confirm-remove == 1 ? Tr.clear-confirm-title : Tr.unsetup-confirm-title;
+                    font-size: 20px;
+                    font-weight: 600;
+                    wrap: word-wrap;
+                    color: Palette.foreground;
+                }
+                Text {
+                    text: root.confirm-remove == 1 ? Tr.clear-confirm-text : Tr.unsetup-confirm-text;
+                    wrap: word-wrap;
+                    color: Palette.foreground;
+                }
+                HorizontalLayout {
+                    padding-top: 8px;
+                    spacing: 8px;
+                    alignment: end;
+                    Button {
+                        text: Tr.cancel;
+                        clicked => {
+                            root.confirm-remove = 0;
+                        }
+                    }
+                    Button {
+                        text: Tr.remove-button;
+                        primary: true;
+                        clicked => {
+                            if root.confirm-remove == 1 {
+                                root.confirm-remove = 0;
+                                root.clear-data();
+                            } else {
+                                root.confirm-remove = 0;
+                                root.remove-machine();
+                            }
                         }
                     }
                 }

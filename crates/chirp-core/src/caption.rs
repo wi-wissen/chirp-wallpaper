@@ -1,4 +1,4 @@
-//! Writing the picture's title and copyright into the picture itself, so
+//! Writing the picture's title and place into the picture itself, so
 //! the desktop shows what it is without opening the app.
 //!
 //! The text sits on a small translucent box close to one corner, like a
@@ -27,15 +27,9 @@ pub fn render(src: &Path, dst: &Path, picture: &Picture, corner: Corner) -> Resu
     let unit = h as f32 / 1080.0;
 
     let mut lines: Vec<(&FontRef, f32, String)> = vec![(&bold, 15.0 * unit, picture.title.clone())];
-    let mut second = Vec::new();
+    // Title and place only: the copyright is shown in the app, not on the desktop.
     if !picture.caption.is_empty() && picture.caption != picture.title {
-        second.push(picture.caption.clone());
-    }
-    if !picture.copyright.is_empty() {
-        second.push(picture.copyright.clone());
-    }
-    if !second.is_empty() {
-        lines.push((&regular, 12.0 * unit, second.join("  ·  ")));
+        lines.push((&regular, 12.0 * unit, picture.caption.clone()));
     }
 
     let pad_x = 10.0 * unit;

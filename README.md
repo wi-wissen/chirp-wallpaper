@@ -31,9 +31,13 @@ Download `ChirpWallpaper.exe`, put it anywhere (e.g. a `Programs` folder in your
 * **Today**: the picture and its story (select the text to copy it), *Update now*, *Learn more*.
 * **History**: pictures of the last days; *Open* shows one in your picture viewer, *Use* sets it until the next picture of the day appears.
 * **Settings**: start automatically, desktop and/or lock screen, picture region, 4K or Full HD, pause,
-  fit (fill, fit, stretch, center, span), all screens or the main screen only, description written into the picture
-  (corner of your choice), keep a copy of every picture in `Pictures\Chirp Wallpaper`.
+  fit (fill, fit, stretch, center, span), all screens or the main screen only, title and place written into the picture
+  (corner of your choice; the copyright stays in the app), keep a copy of every picture in `Pictures\Chirp Wallpaper`.
 * **Notification area**: open, *Learn more* about today's picture, update now, quit.
+* **Remove stored data** (Settings → Data): deletes pictures, history, settings and autostart of this app for your
+  account and quits. *Remove setup for all users* undoes the setup below (administrator rights).
+* **When it checks**: at start, when a new day begins, after the computer wakes from sleep, and otherwise every hour.
+  An automatic check only changes the background when a new picture of the day appears.
 * **Set up for all users** (needs administrator rights, asks via UAC): see below.
 
 **Starting with Windows:** turn on *Start automatically at sign-in* in the settings. The app then starts hidden

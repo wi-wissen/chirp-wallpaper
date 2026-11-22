@@ -95,6 +95,60 @@ fn setup(market: Option<String>, resolution: Option<String>) -> Result<(), Strin
     Ok(())
 }
 
+/// Whether this computer was set up for all users.
+pub fn is_set_up() -> bool {
+    Paths::machine().data_dir.is_dir() || platform::autostart_command(true).is_some()
+}
+
+/// Run elevated: undo [`setup_machine`].
+pub fn remove_machine() -> i32 {
+    let _ = platform::remove_machine_tasks();
+    let _ = platform::set_autostart(true, None);
+    let _ = platform::remove_machine_lockscreen();
+    let _ = std::fs::remove_dir_all(Paths::machine().data_dir);
+    let dir = platform::machine_program_dir();
+    let running_from_there = std::env::current_exe().is_ok_and(|e| e.starts_with(&dir));
+    if !running_from_there {
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+    i32::from(is_set_up())
+}
+
+/// Remove everything this app stored for the signed-in user: pictures,
+/// history, settings and autostart. The current background stays, Windows
+/// keeps its own copy of it.
+pub fn clear_user_data() {
+    let paths = Paths::detect(false);
+    let _ = platform::set_autostart(false, None);
+    let _ = platform::remove_user_task();
+    let _ = std::fs::remove_dir_all(&paths.data_dir);
+    let _ = std::fs::remove_file(&paths.config_file);
+    if let Some(dir) = paths.config_file.parent() {
+        // Only removes the folder when it is empty, i.e. our own folder.
+        let _ = std::fs::remove_dir(dir);
+    }
+}
+
+/// Start the elevated removal from the window and report the result.
+pub fn start_remove(l: &Localizer) {
+    let Ok(exe) = std::env::current_exe() else {
+        return;
+    };
+    crate::with_window(|ui| ui.set_busy(true));
+    crate::toast(&l.t("admin-running", &[]));
+    std::thread::spawn(move || {
+        let ok = run_elevated(&exe, &["--remove-machine"]);
+        let _ = slint::invoke_from_event_loop(move || {
+            let l = Localizer::new(None);
+            crate::with_window(|ui| {
+                ui.set_busy(false);
+                ui.set_machine_setup(is_set_up());
+            });
+            crate::toast(&l.t(if ok { "unsetup-done" } else { "admin-failed" }, &[]));
+        });
+    });
+}
+
 /// Start the elevated setup from the window and report the result.
 pub fn start_setup(l: &Localizer) {
     let Ok(exe) = std::env::current_exe() else {
@@ -121,7 +175,10 @@ pub fn start_setup(l: &Localizer) {
         );
         let _ = slint::invoke_from_event_loop(move || {
             let l = Localizer::new(None);
-            crate::with_window(|ui| ui.set_busy(false));
+            crate::with_window(|ui| {
+                ui.set_busy(false);
+                ui.set_machine_setup(is_set_up());
+            });
             crate::toast(&l.t(if ok { "admin-done" } else { "admin-failed" }, &[]));
         });
     });
@@ -140,4 +197,35 @@ fn run_elevated(exe: &std::path::Path, args: &[&str]) -> bool {
 #[cfg(not(windows))]
 fn run_elevated(_exe: &std::path::Path, _args: &[&str]) -> bool {
     false
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn clear_user_data_removes_everything_of_this_user() {
+        // A private home, so the test never touches real files.
+        let home = std::env::temp_dir().join(format!("chirp-clear-{}", std::process::id()));
+        let data = home.join("data");
+        let config = home.join("config");
+        std::env::set_var("HOME", &home);
+        std::env::set_var("XDG_DATA_HOME", &data);
+        std::env::set_var("XDG_CONFIG_HOME", &config);
+
+        let paths = Paths::user();
+        std::fs::create_dir_all(paths.images_dir()).unwrap();
+        std::fs::write(paths.images_dir().join("x.jpg"), b"x").unwrap();
+        std::fs::write(paths.state_file(), b"{}").unwrap();
+        Config::default().save(&paths.config_file).unwrap();
+        platform::set_autostart(false, Some("chirp --background")).unwrap();
+        assert!(platform::autostart_command(false).is_some());
+
+        clear_user_data();
+
+        assert!(!paths.data_dir.exists());
+        assert!(!paths.config_file.exists());
+        assert!(platform::autostart_command(false).is_none());
+        std::fs::remove_dir_all(home).unwrap();
+    }
 }

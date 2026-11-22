@@ -56,9 +56,15 @@ pub fn run() -> glib::ExitCode {
                 glib::timeout_add_local_once(std::time::Duration::from_millis(delay), move || {
                     first.update(false)
                 });
-                let hourly = ui.clone();
-                glib::timeout_add_seconds_local(3600, move || {
-                    hourly.update(false);
+                // Every minute: check when a new day began, after sleep or
+                // hibernation, or when the last check is an hour old.
+                let ticker = ui.clone();
+                let schedule =
+                    RefCell::new(chirp_core::Schedule::new(std::time::SystemTime::now()));
+                glib::timeout_add_seconds_local(60, move || {
+                    if schedule.borrow_mut().tick(std::time::SystemTime::now()) {
+                        ticker.update(false);
+                    }
                     glib::ControlFlow::Continue
                 });
             }

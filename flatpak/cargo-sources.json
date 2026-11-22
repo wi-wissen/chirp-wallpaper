@@ -4253,6 +4253,19 @@
   {
     "type": "archive",
     "archive-type": "tar-gzip",
+    "url": "https://static.crates.io/crates/num_threads/num_threads-0.1.8.crate",
+    "sha256": "cabcc654086861f9e1bc5115258de62ef92c79b20f4615a1b0cc57c4e82027d4",
+    "dest": "cargo/vendor/num_threads-0.1.8"
+  },
+  {
+    "type": "inline",
+    "contents": "{\"package\": \"cabcc654086861f9e1bc5115258de62ef92c79b20f4615a1b0cc57c4e82027d4\", \"files\": {}}",
+    "dest": "cargo/vendor/num_threads-0.1.8",
+    "dest-filename": ".cargo-checksum.json"
+  },
+  {
+    "type": "archive",
+    "archive-type": "tar-gzip",
     "url": "https://static.crates.io/crates/objc-sys/objc-sys-0.3.5.crate",
     "sha256": "cdb91bdd390c7ce1a8607f35f3ca7151b65afc0ff5ff3b34fa350f7d7c7e4310",
     "dest": "cargo/vendor/objc-sys-0.3.5"

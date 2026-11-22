@@ -12,6 +12,7 @@ pub mod config;
 pub mod markets;
 pub mod paths;
 pub mod picture;
+pub mod schedule;
 pub mod state;
 
 pub use apply::{
@@ -21,6 +22,7 @@ pub use apply::{
 pub use config::{Config, Corner, Fit, Layout, Resolution, Screens};
 pub use paths::{Paths, Scope};
 pub use picture::Picture;
+pub use schedule::Schedule;
 pub use state::State;
 
 /// Errors the core can report.

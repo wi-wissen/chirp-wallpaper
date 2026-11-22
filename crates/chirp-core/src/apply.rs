@@ -211,7 +211,7 @@ fn fallback(paths: &Paths) -> Option<(Picture, PathBuf)> {
 
 /// Part of the file name of pictures with a caption; changed whenever the
 /// caption's look changes, so older renderings are not reused.
-const CAPTION_STYLE: &str = "caption2";
+const CAPTION_STYLE: &str = "caption3";
 
 /// The file to put on screen: the picture itself, or a copy with its title
 /// written into it when that is switched on (falls back to the picture).
@@ -459,7 +459,7 @@ fn prune(paths: &Paths, keep_days: u32, current: &Path) {
             let _ = std::fs::remove_file(&path);
             let _ = std::fs::remove_file(path.with_extension("json"));
             let _ = std::fs::remove_file(path.with_extension("thumb.jpg"));
-            for style in ["caption", CAPTION_STYLE] {
+            for style in ["caption", "caption2", CAPTION_STYLE] {
                 for corner in ["br", "bl", "tr", "tl"] {
                     let _ =
                         std::fs::remove_file(path.with_extension(format!("{style}-{corner}.jpg")));
@@ -760,7 +760,7 @@ mod tests {
         .unwrap();
         let shown = platform.desktop.borrow()[0].clone();
         assert!(
-            shown.to_string_lossy().ends_with(".caption2-br.jpg"),
+            shown.to_string_lossy().ends_with(".caption3-br.jpg"),
             "{shown:?}"
         );
         // The app keeps showing the original picture.

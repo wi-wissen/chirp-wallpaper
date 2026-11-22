@@ -30,6 +30,9 @@ pub const WEBSITE: &str = "https://chirp-wallpaper.wi7.net/";
 pub const SOURCE: &str = "https://github.com/wi-wissen/chirp-wallpaper";
 
 thread_local! {
+    /// When to look for a new picture while running.
+    static SCHEDULE: RefCell<chirp_core::Schedule> =
+        RefCell::new(chirp_core::Schedule::new(std::time::SystemTime::now()));
     /// The window, reachable from tray and single-instance events.
     static WINDOW: RefCell<Option<slint::Weak<AppWindow>>> = const { RefCell::new(None) };
     /// Data behind the window (history list, current picture).
@@ -42,6 +45,9 @@ fn main() {
 
     if has("--apply-machine") {
         std::process::exit(machine::apply_machine());
+    }
+    if has("--remove-machine") {
+        std::process::exit(machine::remove_machine());
     }
     if has("--setup-machine") {
         std::process::exit(machine::setup_machine(&args));
@@ -67,6 +73,7 @@ fn run(background: bool) -> Result<(), slint::PlatformError> {
     fill_texts(&ui, &l);
     ui.set_version(format!("Version {}", env!("CARGO_PKG_VERSION")).into());
     ui.set_is_windows(cfg!(windows));
+    ui.set_machine_setup(machine::is_set_up());
     load_settings(&ui, &l);
     connect(&ui, l.clone());
 
@@ -98,8 +105,10 @@ fn run(background: bool) -> Result<(), slint::PlatformError> {
     {
         ui.window().set_size(slint::LogicalSize::new(w, h));
     }
-    if std::env::var_os("CHIRP_CONFIRM").is_some() {
-        ui.set_confirm_admin(true);
+    match std::env::var("CHIRP_CONFIRM").as_deref() {
+        Ok("remove") => ui.set_confirm_remove(1),
+        Ok(_) => ui.set_confirm_admin(true),
+        Err(_) => {}
     }
     refresh();
     if !background {
@@ -121,11 +130,14 @@ fn run(background: bool) -> Result<(), slint::PlatformError> {
             Duration::from_millis(delay),
             || update(false),
         );
-        hourly.start(
-            slint::TimerMode::Repeated,
-            Duration::from_secs(3600),
-            || update(false),
-        );
+        // Every minute: check when a new day began, after sleep or hibernation,
+        // or when the last check is an hour old.
+        hourly.start(slint::TimerMode::Repeated, Duration::from_secs(60), || {
+            let due = SCHEDULE.with(|s| s.borrow_mut().tick(std::time::SystemTime::now()));
+            if due {
+                update(false);
+            }
+        });
     }
 
     slint::run_event_loop_until_quit()
@@ -214,6 +226,17 @@ fn fill_texts(ui: &AppWindow, l: &Localizer) {
         set_settings_caption_desc => "settings-caption-desc",
         set_settings_caption_position => "settings-caption-position",
         set_settings_save => "settings-save",
+        set_settings_data => "settings-data",
+        set_settings_clear => "settings-clear",
+        set_settings_clear_desc => "settings-clear-desc",
+        set_settings_clear_button => "settings-clear-button",
+        set_clear_confirm_title => "clear-confirm-title",
+        set_clear_confirm_text => "clear-confirm-text",
+        set_settings_unsetup => "settings-unsetup",
+        set_settings_unsetup_desc => "settings-unsetup-desc",
+        set_unsetup_confirm_title => "unsetup-confirm-title",
+        set_unsetup_confirm_text => "unsetup-confirm-text",
+        set_remove_button => "remove-button",
     );
     let mut regions = vec![SharedString::from(l.t("settings-region-auto", &[]))];
     regions.extend(
@@ -379,6 +402,15 @@ fn connect(ui: &AppWindow, l: Rc<Localizer>) {
         let l = l.clone();
         ui.on_setup_machine(move || machine::start_setup(&l));
     }
+    {
+        let l = l.clone();
+        ui.on_remove_machine(move || machine::start_remove(&l));
+    }
+    ui.on_clear_data(|| {
+        machine::clear_user_data();
+        // Nothing left to show; quit so nothing is written again.
+        let _ = slint::quit_event_loop();
+    });
     ui.on_open_website(|| {
         let _ = open::that(WEBSITE);
     });
@@ -473,6 +505,9 @@ fn show_snapshot(l: &Localizer, data: model::Loaded) {
 
 /// Check for a new picture in the background.
 pub fn update(manual: bool) {
+    if manual {
+        SCHEDULE.with(|s| s.borrow_mut().checked(std::time::SystemTime::now()));
+    }
     let mut already_busy = false;
     with_window(|ui| {
         already_busy = ui.get_busy();

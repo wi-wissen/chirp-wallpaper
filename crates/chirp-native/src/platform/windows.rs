@@ -156,6 +156,20 @@ fn set_with_desktop_wallpaper(image: &Path, layout: &Layout) -> windows::core::R
     }
 }
 
+/// Undo the machine-wide lock screen picture.
+pub fn remove_machine_lockscreen() -> std::result::Result<(), InstallError> {
+    if let Ok(key) = RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey_with_flags(CSP_KEY, KEY_WRITE) {
+        for value in [
+            "LockScreenImagePath",
+            "LockScreenImageUrl",
+            "LockScreenImageStatus",
+        ] {
+            let _ = key.delete_value(value);
+        }
+    }
+    Ok(())
+}
+
 /// Whether "Background: Solid colour" is selected in the Windows settings.
 fn current_background_is_colour() -> bool {
     RegKey::predef(HKEY_CURRENT_USER)
