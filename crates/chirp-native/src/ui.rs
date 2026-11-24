@@ -85,6 +85,18 @@ pub fn meta_line(p: &Picture) -> String {
         .join(" · ")
 }
 
+/// The state as far as this app run has seen it: the result of a check from
+/// an earlier run (maybe days ago, another version, before the network was
+/// up) is not reported until this run has checked itself.
+pub fn session_state(state: &State, checked_this_run: bool) -> State {
+    let mut state = state.clone();
+    if !checked_this_run {
+        state.last_error = None;
+        state.offline = false;
+    }
+    state
+}
+
 /// Status line under the picture: (text, is it a problem?).
 pub fn status_line(l: &Localizer, cfg: &Config, state: &State, today: &str) -> (String, bool) {
     if cfg.is_paused(today) {
@@ -112,6 +124,18 @@ mod tests {
         let i = region_index("de-DE");
         assert_eq!(region_code(i), "de-DE");
         assert_eq!(region_code(99), "auto");
+    }
+
+    #[test]
+    fn old_errors_wait_for_a_check_of_this_run() {
+        let state = State {
+            last_error: Some("network error: dns".into()),
+            offline: true,
+            ..State::default()
+        };
+        assert!(session_state(&state, false).last_error.is_none());
+        assert!(!session_state(&state, false).offline);
+        assert_eq!(session_state(&state, true), state);
     }
 
     #[test]

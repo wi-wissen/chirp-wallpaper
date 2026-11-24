@@ -468,7 +468,8 @@ fn show_snapshot(l: &Localizer, data: model::Loaded) {
             }
             None => ui.set_has_picture(false),
         }
-        let (status, is_error) = model::status_line(l, &cfg, state, &chirp_core::today());
+        let seen = model::session_state(state, CHECKED.with(|c| c.get()));
+        let (status, is_error) = model::status_line(l, &cfg, &seen, &chirp_core::today());
         trace(&format!(
             "snapshot has_picture={} status={status:?} error={is_error}",
             state.current.is_some()
@@ -542,6 +543,7 @@ pub fn update(manual: bool) {
         );
         let _ = slint::invoke_from_event_loop(move || {
             let l = Rc::new(Localizer::new(None));
+            CHECKED.with(|c| c.set(true));
             with_window(|ui| ui.set_busy(false));
             trace("busy=false");
             // No connection (e.g. right after sign-in, before the network is up):
@@ -607,6 +609,8 @@ fn use_history(l: &Rc<Localizer>, index: usize) {
 thread_local! {
     static TOAST_TIMER: slint::Timer = slint::Timer::default();
     static RETRY_TIMER: slint::Timer = slint::Timer::default();
+    /// Whether this run has finished a check; earlier results are not shown before.
+    static CHECKED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
     static RETRY_COUNT: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 

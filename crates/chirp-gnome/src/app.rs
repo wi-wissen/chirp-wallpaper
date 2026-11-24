@@ -206,6 +206,8 @@ pub struct Ui {
     spinner_box: gtk::Box,
     spinner_label: gtk::Label,
     waiting: RefCell<bool>,
+    /// Whether this run has finished a check; earlier results are not shown before.
+    checked: RefCell<bool>,
     retries: RefCell<usize>,
     has_current: RefCell<bool>,
     meta: gtk::Label,
@@ -492,6 +494,7 @@ impl Ui {
             spinner_box,
             spinner_label,
             waiting: RefCell::new(false),
+            checked: RefCell::new(false),
             retries: RefCell::new(0),
             has_current: RefCell::new(false),
             meta,
@@ -765,7 +768,8 @@ impl Ui {
         if let Some(px) = data.picture {
             self.picture.set_paintable(Some(&px.texture()));
         }
-        let (status, problem) = ui::status_line(&self.l, &cfg, state, &chirp_core::today());
+        let seen = ui::session_state(state, *self.checked.borrow());
+        let (status, problem) = ui::status_line(&self.l, &cfg, &seen, &chirp_core::today());
         trace(&format!(
             "snapshot has_picture={} status={status:?} error={problem}",
             state.current.is_some()
@@ -956,6 +960,7 @@ impl Ui {
             })
             .await;
             *ui.busy.borrow_mut() = false;
+            *ui.checked.borrow_mut() = true;
             trace("busy=false");
             ui.update_button.set_sensitive(true);
             ui.update_button.set_label(&ui.l.t("today-update", &[]));

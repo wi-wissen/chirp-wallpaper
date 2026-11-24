@@ -181,6 +181,28 @@ def scenario_first_start(home):
     return c
 
 
+def scenario_stale_error(home):
+    """An error stored by an earlier run (another version, earlier day) and a
+    working network: opening the app must not show that old error."""
+    import json
+    state_file = home / "data/chirp-wallpaper/state.json"
+    state = json.loads(state_file.read_text(encoding="utf-8"))
+    state.update(last_error="network error: dns error", offline=False)
+    state_file.write_text(json.dumps(state), encoding="utf-8")
+    run = Run("stale-error", home, slow=1)
+    shots = [run.shot(t, OUT / f"stale-error-{t}s.png") for t in (0.4, 1.5)]
+    run.wait_for("busy=false", 20)
+    shots.append(run.shot(0, OUT / "stale-error-after.png"))
+    run.stop()
+    ev = run.events()
+    c = Check("stale-error")
+    c.that(not any("error=true" in e for _, e in ev), "old error is never shown")
+    c.that(not any("status=\"" in e and "status=\"\"" not in e for _, e in ev),
+           "no status note at all while the network works")
+    strip(shots, OUT / "stale-error.png", ["0.4s", "1.5s", "after check"])
+    return c
+
+
 def scenario_offline_start(home):
     """Empty profile, no network for 25 s (e.g. right after sign-in)."""
     run = Run("offline-start", home, offline_for=25, slow=1)
@@ -280,6 +302,7 @@ def main():
     checks = []
     # Order matters: later scenarios use the picture loaded by the first one.
     for name, fn in [("first-start", scenario_first_start),
+                     ("stale-error", scenario_stale_error),
                      ("offline-start", None),
                      ("offline-with-picture", scenario_offline_with_picture)]:
         if wanted and name not in wanted:
