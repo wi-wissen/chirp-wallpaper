@@ -55,7 +55,7 @@ class Run:
     still shutting down can never answer for the next run."""
 
     def __init__(self, name, home, offline_for=0, slow=0, lang="de_DE.UTF-8",
-                 scale="1", size="1040x700", page=0):
+                 scale="1", size="1040x700", page=0, edge=False):
         RUN_NUMBER[0] += 1
         display = 90 + RUN_NUMBER[0]
         port = 8700 + RUN_NUMBER[0]
@@ -80,6 +80,8 @@ class Run:
                    LANG=lang, LANGUAGE=lang.split("_")[0], LC_ALL="",
                    CHIRP_BING_BASE=f"http://127.0.0.1:{port}", CHIRP_TRACE=str(self.trace),
                    SLINT_SCALE_FACTOR=scale, CHIRP_WINDOW=size, CHIRP_PAGE=str(page))
+        if edge:
+            env["CHIRP_EDGE_BASE"] = env["CHIRP_BING_BASE"]
         env.pop("WAYLAND_DISPLAY", None)
         # Talk to the local fake Bing directly, never through a proxy.
         for var in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
@@ -241,6 +243,37 @@ def scenario_offline_with_picture(home):
     return c
 
 
+def scenario_edge_source(home):
+    """Source "Microsoft Edge": its picture is loaded, named in the app's
+    language (Edge has no titles), no Bing request, and the setting is shown."""
+    config = home / "config/chirp-wallpaper"
+    config.mkdir(parents=True, exist_ok=True)
+    (config / "config.toml").write_text('source = "edge"\n', encoding="utf-8")
+    run = Run("edge-source", home, slow=1, edge=True)
+    run.wait_for("has_picture=true", 30)
+    run.wait_for("history-complete", 20)
+    time.sleep(0.5)
+    shots = [run.shot(0, OUT / "edge-source-today.png")]
+    run.stop()
+    ev = run.events()
+    settings = Run("edge-source", home, edge=True, page=2, offline_for=10_000)
+    shots.append(settings.shot(3, OUT / "edge-source-settings.png"))
+    settings.stop()
+    c = Check("edge-source")
+    c.that(first(ev, "snapshot has_picture=true") is not None, "Edge picture appears")
+    c.that(not any("error=true" in e for _, e in ev), "no error shown")
+    c.that(any(e.startswith("toast=") and "Microsoft Edge" in e for _, e in ev),
+           "announced as background from Microsoft Edge")
+    images = home / "data/chirp-wallpaper/images"
+    c.that((images / "edge-EdgeTest2160.jpg").exists(), "4K picture is stored")
+    c.that((images / "edge-EdgeTest2160.thumb.jpg").exists(), "history preview is stored")
+    log = (home / "fake-bing.log").read_text(encoding="utf-8")
+    c.that("/resolver/api/resolve/v3/config/" in log, "asks the Edge service")
+    c.that("HPImageArchive" not in log, "does not ask Bing")
+    strip(shots, OUT / "edge-source.png", ["today", "settings"])
+    return c
+
+
 def seed_history(home, days=5):
     """Copy the loaded picture as older days, so the history has several cards."""
     import json
@@ -304,7 +337,8 @@ def main():
     for name, fn in [("first-start", scenario_first_start),
                      ("stale-error", scenario_stale_error),
                      ("offline-start", None),
-                     ("offline-with-picture", scenario_offline_with_picture)]:
+                     ("offline-with-picture", scenario_offline_with_picture),
+                     ("edge-source", None)]:
         if wanted and name not in wanted:
             continue
         print(name)
@@ -312,6 +346,10 @@ def main():
             fresh = OUT / "home-offline"
             fresh.mkdir()
             checks.append(scenario_offline_start(fresh))
+        elif name == "edge-source":
+            fresh = OUT / "home-edge"
+            fresh.mkdir()
+            checks.append(scenario_edge_source(fresh))
         else:
             checks.append(fn(home))
     if not GNOME and (not wanted or "layout" in wanted):

@@ -220,7 +220,7 @@ pub fn agent() -> ureq::Agent {
         .build()
 }
 
-fn get_text(agent: &ureq::Agent, url: &str) -> Result<String> {
+pub fn get_text(agent: &ureq::Agent, url: &str) -> Result<String> {
     agent
         .get(url)
         .call()

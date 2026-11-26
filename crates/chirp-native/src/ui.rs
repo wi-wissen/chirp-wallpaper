@@ -70,10 +70,39 @@ pub fn pause_index(until: Option<&str>, today: &str) -> i32 {
     }
 }
 
+/// Picture sources in the order of the settings list.
+pub const SOURCES: &[(chirp_core::Source, &str)] = &[
+    (chirp_core::Source::Bing, "source-bing"),
+    (chirp_core::Source::Edge, "source-edge"),
+];
+
+pub fn source_index(source: chirp_core::Source) -> i32 {
+    SOURCES.iter().position(|(s, _)| *s == source).unwrap_or(0) as i32
+}
+
+pub fn source_from(index: i32) -> chirp_core::Source {
+    SOURCES
+        .get(index.max(0) as usize)
+        .map(|(s, _)| *s)
+        .unwrap_or_default()
+}
+
+/// The title to show: pictures without one (Edge) are named after their source.
+pub fn title(l: &Localizer, p: &Picture) -> String {
+    if !p.title.is_empty() {
+        p.title.clone()
+    } else if p.source == "edge" {
+        l.t("edge-title", &[])
+    } else {
+        p.date.clone()
+    }
+}
+
 /// "Bing · de-DE · 2026-11-22"
 pub fn meta_line(p: &Picture) -> String {
     let source = match p.source.as_str() {
         "bing" => "Bing",
+        "edge" => "Microsoft Edge",
         "custom" => "",
         other => other,
     };
@@ -136,6 +165,33 @@ mod tests {
         assert!(session_state(&state, false).last_error.is_none());
         assert!(!session_state(&state, false).offline);
         assert_eq!(session_state(&state, true), state);
+    }
+
+    #[test]
+    fn edge_pictures_are_named_after_their_source() {
+        let l = Localizer::new(Some("de"));
+        let p = Picture {
+            id: "edge-X".into(),
+            source: "edge".into(),
+            market: "de-DE".into(),
+            date: "2026-11-26".into(),
+            title: String::new(),
+            caption: String::new(),
+            copyright: "© Getty Images".into(),
+            description: None,
+            info_url: None,
+            image_url: String::new(),
+            fallback_url: None,
+            thumb_url: None,
+            note: None,
+        };
+        assert_eq!(title(&l, &p), "Hintergrund aus Microsoft Edge");
+        assert_eq!(meta_line(&p), "Microsoft Edge · de-DE · 2026-11-26");
+        assert_eq!(
+            source_from(source_index(chirp_core::Source::Edge)),
+            chirp_core::Source::Edge
+        );
+        assert_eq!(source_from(9), chirp_core::Source::Bing);
     }
 
     #[test]

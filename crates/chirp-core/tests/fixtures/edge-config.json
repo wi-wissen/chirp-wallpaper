@@ -1,0 +1,46 @@
+{
+ "configs": {
+  "BackgroundImageWC/default": {
+   "properties": {
+    "simpleImages": {
+     "data": [
+      {
+       "attribution": "Getty Images",
+       "image": {
+        "i100": "BB1msIoH",
+        "i240": "BB1msFQu",
+        "i720": "BB1msKEt",
+        "i1080": "BB1msOP5",
+        "i1440": "BB1msKEx",
+        "i2160": "BB1msOP9"
+       }
+      },
+      {
+       "attribution": "Getty Images",
+       "image": {
+        "i100": "BB1msOOQ",
+        "i240": "BB1msB1N",
+        "i720": "BB1msB1O",
+        "i1080": "BB1msMpv",
+        "i1440": "BB1msyCK",
+        "i2160": "BB1msB1R"
+       }
+      },
+      {
+       "attribution": "Getty Images",
+       "image": {
+        "i100": "BB1msKEq",
+        "i240": "BB1msKEp",
+        "i720": "BB1msB1P",
+        "i1080": "BB1msOP2",
+        "i1440": "BB1msMpB",
+        "i2160": "BB1msFQC"
+       }
+      }
+     ]
+    },
+    "fallbackImageId": "BBYyvk2"
+   }
+  }
+ }
+}

@@ -9,6 +9,7 @@ pub mod apply;
 pub mod bing;
 pub mod caption;
 pub mod config;
+pub mod edge;
 pub mod markets;
 pub mod paths;
 pub mod picture;
@@ -19,7 +20,7 @@ pub use apply::{
     apply, complete_history, copies_dir, history, reapply, use_cached, CachedPicture, Outcome,
     Platform, Target, Trigger,
 };
-pub use config::{Config, Corner, Fit, Layout, Resolution, Screens};
+pub use config::{Config, Corner, Fit, Layout, Resolution, Screens, Source};
 pub use paths::{Paths, Scope};
 pub use picture::Picture;
 pub use schedule::Schedule;

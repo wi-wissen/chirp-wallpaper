@@ -195,6 +195,8 @@ fn fill_texts(ui: &AppWindow, l: &Localizer) {
         set_settings_lockscreen => "settings-lockscreen",
         set_settings_lockscreen_desc => "settings-lockscreen-desc",
         set_settings_picture => "settings-picture",
+        set_settings_source => "settings-source",
+        set_settings_source_desc => "settings-source-desc",
         set_settings_region => "settings-region",
         set_settings_region_desc => "settings-region-desc",
         set_settings_resolution => "settings-resolution",
@@ -246,6 +248,11 @@ fn fill_texts(ui: &AppWindow, l: &Localizer) {
             .map(|(_, name)| SharedString::from(*name)),
     );
     ui.set_regions(ModelRc::new(VecModel::from(regions)));
+    let sources: Vec<SharedString> = model::SOURCES
+        .iter()
+        .map(|(_, id)| l.t(id, &[]).into())
+        .collect();
+    ui.set_sources(ModelRc::new(VecModel::from(sources)));
     let pauses: Vec<SharedString> = ["pause-off", "pause-day", "pause-week", "pause-month"]
         .iter()
         .map(|id| l.t(id, &[]).into())
@@ -290,6 +297,7 @@ fn load_settings(ui: &AppWindow, _l: &Localizer) {
     let cfg = effective_config();
     ui.set_desktop(cfg.desktop);
     ui.set_lockscreen(cfg.lockscreen);
+    ui.set_source_index(model::source_index(cfg.source));
     ui.set_region_index(model::region_index(&cfg.market));
     ui.set_resolution_index(match cfg.resolution {
         Resolution::Uhd => 0,
@@ -314,6 +322,7 @@ fn save_settings(ui: &AppWindow) {
     let mut cfg = user_config();
     cfg.desktop = ui.get_desktop();
     cfg.lockscreen = ui.get_lockscreen();
+    cfg.source = model::source_from(ui.get_source_index());
     cfg.market = model::region_code(ui.get_region_index()).to_string();
     cfg.resolution = if ui.get_resolution_index() == 1 {
         Resolution::FullHd
@@ -438,7 +447,7 @@ fn show_snapshot(l: &Localizer, data: model::Loaded) {
         let state = &data.state;
         match &state.current {
             Some(p) => {
-                ui.set_pic_title(p.title.clone().into());
+                ui.set_pic_title(model::title(l, p).into());
                 ui.set_pic_caption(
                     if p.caption != p.title {
                         p.caption.clone()
@@ -479,7 +488,14 @@ fn show_snapshot(l: &Localizer, data: model::Loaded) {
         ui.set_baseline_text(
             data.baseline
                 .as_ref()
-                .map(|p| format!("{}: {} ({})", l.t("label-baseline", &[]), p.title, p.date))
+                .map(|p| {
+                    format!(
+                        "{}: {} ({})",
+                        l.t("label-baseline", &[]),
+                        model::title(l, p),
+                        p.date
+                    )
+                })
                 .unwrap_or_default()
                 .into(),
         );
@@ -491,7 +507,7 @@ fn show_snapshot(l: &Localizer, data: model::Loaded) {
                     .clone()
                     .map(slint::Image::from_rgb8)
                     .unwrap_or_default(),
-                title: c.picture.title.clone().into(),
+                title: model::title(l, &c.picture).into(),
                 date: c.picture.date.clone().into(),
             })
             .collect();
@@ -561,10 +577,10 @@ pub fn update(manual: bool) {
             if announce {
                 let msg = match &outcome {
                     Ok(Outcome::Updated { picture, .. }) => {
-                        l.t("updated", &[("title", &picture.title)])
+                        l.t("updated", &[("title", &model::title(&l, picture))])
                     }
                     Ok(Outcome::AlreadyCurrent { picture, .. }) => {
-                        l.t("already-current", &[("title", &picture.title)])
+                        l.t("already-current", &[("title", &model::title(&l, picture))])
                     }
                     Ok(Outcome::Paused { until }) => l.t("paused", &[("date", until)]),
                     Ok(Outcome::Unchanged { reason, .. }) => {
@@ -599,7 +615,10 @@ fn use_history(l: &Rc<Localizer>, index: usize) {
     let cfg = effective_config();
     match chirp_core::use_cached(&cfg, &paths, &NativePlatform::new(false), &item) {
         Ok(_) => {
-            toast(&l.t("history-used", &[("title", &item.picture.title)]));
+            toast(&l.t(
+                "history-used",
+                &[("title", &model::title(l, &item.picture))],
+            ));
         }
         Err(e) => toast(&l.t("error", &[("reason", &e.to_string())])),
     }

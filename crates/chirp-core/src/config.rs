@@ -21,6 +21,17 @@ pub enum Resolution {
     FullHd,
 }
 
+/// Where the pictures come from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum Source {
+    /// The Bing picture of the day, with title and description.
+    #[default]
+    Bing,
+    /// The landscape background of the Microsoft Edge new tab page.
+    Edge,
+}
+
 /// How the picture fills the screen.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
@@ -68,6 +79,8 @@ pub struct Layout {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
+    /// Where the pictures come from.
+    pub source: Source,
     /// Bing market such as `de-DE`, or `auto` to follow the system language.
     pub market: String,
     /// Picture size to download.
@@ -95,6 +108,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            source: Source::Bing,
             market: "auto".into(),
             resolution: Resolution::Uhd,
             desktop: true,
@@ -219,10 +233,12 @@ mod tests {
             caption: true,
             caption_position: Corner::TopLeft,
             save_copies: true,
+            source: Source::Edge,
             ..Config::default()
         };
         cfg.save(&f).unwrap();
         let text = std::fs::read_to_string(&f).unwrap();
+        assert!(text.contains("source = \"edge\""));
         assert!(text.contains("fit = \"span\""));
         assert!(text.contains("caption_position = \"top-left\""));
         assert_eq!(Config::load(&[&f]).unwrap(), cfg);

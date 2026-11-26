@@ -47,6 +47,9 @@ enum Cmd {
     },
     /// Change settings.
     Config {
+        /// Where the pictures come from.
+        #[arg(long)]
+        source: Option<SourceArg>,
         /// Bing region such as `de-DE`, or `auto`.
         #[arg(long)]
         market: Option<String>,
@@ -77,6 +80,14 @@ enum ResolutionArg {
 }
 
 #[derive(Clone, Copy, ValueEnum)]
+enum SourceArg {
+    /// The Bing picture of the day.
+    Bing,
+    /// The landscape background of the Microsoft Edge new tab page.
+    Edge,
+}
+
+#[derive(Clone, Copy, ValueEnum)]
 enum OnOff {
     On,
     Off,
@@ -91,6 +102,7 @@ fn main() -> ExitCode {
         Cmd::Status => run_status(&l, &paths),
         Cmd::Seal { image, title } => run_seal(&l, &paths, image, &title, cli.quiet),
         Cmd::Config {
+            source,
             market,
             resolution,
             desktop,
@@ -100,6 +112,7 @@ fn main() -> ExitCode {
         } => run_config(
             &l,
             &paths,
+            source,
             market,
             resolution,
             desktop,
@@ -162,7 +175,13 @@ fn run_apply(l: &Localizer, paths: &Paths, machine: bool, quiet: bool) -> CmdRes
             if !warnings.is_empty() =>
         {
             if !quiet {
-                println!("{}", l.t("updated", &[("title", &picture.title)]));
+                println!(
+                    "{}",
+                    l.t(
+                        "updated",
+                        &[("title", &chirp_native::ui::title(l, &picture))]
+                    )
+                );
             }
             for (target, reason) in warnings {
                 let id = match target {
@@ -175,13 +194,25 @@ fn run_apply(l: &Localizer, paths: &Paths, machine: bool, quiet: bool) -> CmdRes
         }
         Outcome::Updated { picture, .. } => {
             if !quiet {
-                println!("{}", l.t("updated", &[("title", &picture.title)]));
+                println!(
+                    "{}",
+                    l.t(
+                        "updated",
+                        &[("title", &chirp_native::ui::title(l, &picture))]
+                    )
+                );
             }
             Ok(ExitCode::SUCCESS)
         }
         Outcome::AlreadyCurrent { picture, .. } => {
             if !quiet {
-                println!("{}", l.t("already-current", &[("title", &picture.title)]));
+                println!(
+                    "{}",
+                    l.t(
+                        "already-current",
+                        &[("title", &chirp_native::ui::title(l, &picture))]
+                    )
+                );
             }
             Ok(ExitCode::SUCCESS)
         }
@@ -198,7 +229,13 @@ fn run_apply(l: &Localizer, paths: &Paths, machine: bool, quiet: bool) -> CmdRes
                 if let Some(p) = kept {
                     println!(
                         "{}",
-                        l.t("unchanged-kept", &[("title", &p.title), ("date", &p.date)])
+                        l.t(
+                            "unchanged-kept",
+                            &[
+                                ("title", &chirp_native::ui::title(l, &p)),
+                                ("date", &p.date)
+                            ]
+                        )
                     );
                 }
             }
@@ -213,7 +250,7 @@ fn run_status(l: &Localizer, paths: &Paths) -> CmdResult {
     println!("{}", l.t("status-heading", &[]));
     match &state.current {
         Some(p) => {
-            println!("  {}", p.title);
+            println!("  {}", chirp_native::ui::title(l, p));
             if !p.caption.is_empty() && p.caption != p.title {
                 println!("  {}", p.caption);
             }
@@ -245,7 +282,7 @@ fn run_status(l: &Localizer, paths: &Paths) -> CmdResult {
         println!("{}: {e}", l.t("label-last-error", &[]));
     }
     let base = baseline(paths)
-        .map(|(p, _)| format!("{} ({})", p.title, p.date))
+        .map(|(p, _)| format!("{} ({})", chirp_native::ui::title(l, &p), p.date))
         .unwrap_or(none);
     println!("{}: {base}", l.t("label-baseline", &[]));
     Ok(ExitCode::SUCCESS)
@@ -277,7 +314,10 @@ fn run_seal(
             "{}",
             l.t(
                 "seal-done",
-                &[("title", &picture.title), ("date", &picture.date)]
+                &[
+                    ("title", &chirp_native::ui::title(l, &picture)),
+                    ("date", &picture.date)
+                ]
             )
         );
     }
@@ -288,6 +328,7 @@ fn run_seal(
 fn run_config(
     l: &Localizer,
     paths: &Paths,
+    source: Option<SourceArg>,
     market: Option<String>,
     resolution: Option<ResolutionArg>,
     desktop: Option<OnOff>,
@@ -298,6 +339,12 @@ fn run_config(
 ) -> CmdResult {
     // Only this scope's own file is changed, so machine settings stay intact.
     let mut cfg = Config::load(&[&paths.config_file]).map_err(|e| e.to_string())?;
+    if let Some(s) = source {
+        cfg.source = match s {
+            SourceArg::Bing => chirp_core::Source::Bing,
+            SourceArg::Edge => chirp_core::Source::Edge,
+        };
+    }
     if let Some(m) = market {
         cfg.market = m;
     }

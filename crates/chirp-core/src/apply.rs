@@ -61,7 +61,7 @@ pub enum Trigger {
     Manual,
 }
 
-/// Run one update with Bing and real downloads.
+/// Run one update with the configured source and real downloads.
 pub fn apply(
     cfg: &Config,
     paths: &Paths,
@@ -81,7 +81,10 @@ pub fn apply(
         market,
         &crate::today(),
         trigger,
-        &crate::bing::fetch_latest,
+        match cfg.source {
+            crate::Source::Bing => &crate::bing::fetch_latest,
+            crate::Source::Edge => &crate::edge::fetch_latest,
+        },
         &download,
     )
 }
@@ -262,7 +265,11 @@ fn save_copy(picture: &Picture, file: &Path) -> Result<PathBuf> {
             }
         })
         .collect();
-    let name = format!("{} {}.jpg", picture.date, title.trim());
+    let title = match title.trim() {
+        "" => picture.file_stem(),
+        t => t.to_string(),
+    };
+    let name = format!("{} {title}.jpg", picture.date);
     let dest = dir.join(name);
     if !dest.exists() {
         std::fs::copy(file, &dest)?;
@@ -749,6 +756,83 @@ mod tests {
             other => panic!("unexpected {other:?}"),
         }
         assert_eq!(platform.desktop.borrow().as_slice(), [machine_img]);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    fn edge(id: &str, date: &str) -> Picture {
+        Picture {
+            id: format!("edge-{id}"),
+            source: "edge".into(),
+            title: String::new(),
+            caption: String::new(),
+            copyright: "© Getty Images".into(),
+            ..sample(date)
+        }
+    }
+
+    #[test]
+    fn edge_picture_changes_only_when_edge_shows_another_one() {
+        let dir = temp("edge-daily");
+        let paths = Paths::in_dir(&dir);
+        let cfg = Config {
+            source: crate::Source::Edge,
+            ..Config::default()
+        };
+        let platform = FakePlatform::default();
+        let run = |id: &'static str, date: &'static str| {
+            let fetch = move |_: &str, _: Resolution| Ok(edge(id, date));
+            apply_with(
+                &cfg,
+                &paths,
+                &platform,
+                "de-DE",
+                date,
+                Trigger::Automatic,
+                &fetch,
+                &write_jpeg,
+            )
+            .unwrap()
+        };
+        assert!(matches!(run("A", "2026-11-26"), Outcome::Updated { .. }));
+        // Next day, Edge still shows the same picture: nothing changes.
+        assert!(matches!(
+            run("A", "2026-11-27"),
+            Outcome::AlreadyCurrent { .. }
+        ));
+        assert_eq!(platform.desktop.borrow().len(), 1);
+        // Edge shows a new one: it is set.
+        assert!(matches!(run("B", "2026-11-28"), Outcome::Updated { .. }));
+        assert_eq!(platform.desktop.borrow().len(), 2);
+        let state = State::load(&paths.state_file());
+        assert_eq!(state.current.unwrap().id, "edge-B");
+        assert_eq!(history(&paths).len(), 2);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn untitled_pictures_get_no_caption() {
+        let dir = temp("edge-caption");
+        let paths = Paths::in_dir(&dir);
+        let cfg = Config {
+            caption: true,
+            save_copies: false,
+            ..Config::default()
+        };
+        let platform = FakePlatform::default();
+        let fetch = |_: &str, _: Resolution| Ok(edge("A", "2026-11-26"));
+        apply_with(
+            &cfg,
+            &paths,
+            &platform,
+            "de-DE",
+            "2026-11-26",
+            Trigger::Manual,
+            &fetch,
+            &write_jpeg,
+        )
+        .unwrap();
+        let shown = platform.desktop.borrow()[0].clone();
+        assert!(shown.to_string_lossy().ends_with("edge-A.jpg"), "{shown:?}");
         std::fs::remove_dir_all(dir).unwrap();
     }
 

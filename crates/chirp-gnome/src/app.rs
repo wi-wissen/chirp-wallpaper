@@ -222,6 +222,7 @@ pub struct Ui {
     history_empty: gtk::Label,
     autostart: adw::SwitchRow,
     desktop: adw::SwitchRow,
+    source: adw::ComboRow,
     region: adw::ComboRow,
     resolution: adw::ComboRow,
     pause: adw::ComboRow,
@@ -253,8 +254,8 @@ impl Ui {
             .application(app)
             .title("Chirp Wallpaper")
             .icon_name(APP_ID)
-            .default_width(920)
-            .default_height(720)
+            .default_width(window_size().0)
+            .default_height(window_size().1)
             .build();
 
         let stack = adw::ViewStack::new();
@@ -404,6 +405,12 @@ impl Ui {
             .build();
         general.add(&autostart);
         general.add(&desktop);
+        let source_names: Vec<String> = ui::SOURCES.iter().map(|(_, id)| l.t(id, &[])).collect();
+        let source = combo(
+            &l.t("settings-source", &[]),
+            &l.t("settings-source-desc", &[]),
+            &source_names,
+        );
         let mut region_names = vec![l.t("settings-region-auto", &[])];
         region_names.extend(ui::REGIONS.iter().map(|(_, n)| n.to_string()));
         let region = combo(
@@ -428,6 +435,7 @@ impl Ui {
         let picture_group = adw::PreferencesGroup::builder()
             .title(l.t("settings-picture", &[]))
             .build();
+        picture_group.add(&source);
         picture_group.add(&region);
         picture_group.add(&resolution);
         picture_group.add(&pause);
@@ -484,6 +492,15 @@ impl Ui {
             &l.t("nav-settings", &[]),
             "emblem-system-symbolic",
         );
+        // CHIRP_PAGE opens a page directly (screenshots and UI tests).
+        if let Some(page) = std::env::var("CHIRP_PAGE")
+            .ok()
+            .and_then(|p| p.parse::<usize>().ok())
+        {
+            if let Some(name) = ["today", "history", "settings"].get(page) {
+                stack.set_visible_child_name(name);
+            }
+        }
 
         let ui = Rc::new(Ui {
             l,
@@ -509,6 +526,7 @@ impl Ui {
             history_empty,
             autostart,
             desktop,
+            source,
             region,
             resolution,
             pause,
@@ -596,7 +614,7 @@ impl Ui {
             self.desktop
                 .connect_active_notify(move |_| ui.save_settings());
         }
-        for row in [&self.region, &self.resolution] {
+        for row in [&self.source, &self.region, &self.resolution] {
             let ui = self.clone();
             row.connect_selected_notify(move |_| ui.save_settings());
         }
@@ -633,6 +651,8 @@ impl Ui {
         let cfg = effective_config();
         self.autostart.set_active(autostart_enabled());
         self.desktop.set_active(cfg.desktop);
+        self.source
+            .set_selected(ui::source_index(cfg.source) as u32);
         self.region
             .set_selected(ui::region_index(&cfg.market) as u32);
         self.resolution.set_selected(match cfg.resolution {
@@ -656,6 +676,7 @@ impl Ui {
         }
         let mut cfg = user_config();
         cfg.desktop = self.desktop.is_active();
+        cfg.source = ui::source_from(self.source.selected() as i32);
         cfg.market = ui::region_code(self.region.selected() as i32).to_string();
         cfg.resolution = if self.resolution.selected() == 1 {
             Resolution::FullHd
@@ -719,7 +740,7 @@ impl Ui {
         match &state.current {
             Some(p) => {
                 self.meta.set_text(&ui::meta_line(p));
-                self.title.set_text(&p.title);
+                self.title.set_text(&ui::title(&self.l, p));
                 self.caption
                     .set_text(if p.caption != p.title { &p.caption } else { "" });
                 self.copyright.set_text(&p.copyright);
@@ -790,7 +811,7 @@ impl Ui {
                 format!(
                     "{}: {} ({})",
                     self.l.t("label-baseline", &[]),
-                    p.title,
+                    ui::title(&self.l, p),
                     p.date
                 )
             })
@@ -831,7 +852,7 @@ impl Ui {
             pic.set_paintable(Some(&t.texture()));
         }
         let title = gtk::Label::builder()
-            .label(&item.picture.title)
+            .label(ui::title(&self.l, &item.picture))
             .xalign(0.0)
             .ellipsize(gtk::pango::EllipsizeMode::End)
             .build();
@@ -896,7 +917,8 @@ impl Ui {
         let cfg = effective_config();
         match chirp_core::use_cached(&cfg, &paths(), native_platform().as_ref(), &item) {
             Ok(_) => {
-                self.toast(&self.l.t("history-used", &[("title", &item.picture.title)]));
+                let title = ui::title(&self.l, &item.picture);
+                self.toast(&self.l.t("history-used", &[("title", &title)]));
             }
             Err(e) => self.toast(&self.l.t("error", &[("reason", &e.to_string())])),
         }
@@ -980,10 +1002,10 @@ impl Ui {
                 let l = &ui.l;
                 let msg = match result {
                     Ok(Ok(Outcome::Updated { picture, .. })) => {
-                        l.t("updated", &[("title", &picture.title)])
+                        l.t("updated", &[("title", &ui::title(l, &picture))])
                     }
                     Ok(Ok(Outcome::AlreadyCurrent { picture, .. })) => {
-                        l.t("already-current", &[("title", &picture.title)])
+                        l.t("already-current", &[("title", &ui::title(l, &picture))])
                     }
                     Ok(Ok(Outcome::Paused { until })) => l.t("paused", &[("date", &until)]),
                     Ok(Ok(Outcome::Unchanged { reason, .. })) => {
@@ -1026,7 +1048,50 @@ fn combo(title: &str, subtitle: &str, items: &[String]) -> adw::ComboRow {
     if !subtitle.is_empty() {
         row.set_subtitle(subtitle);
     }
+    // The inline choice may report less width than its text needs and then
+    // gets cut off next to a long subtitle: reserve the selected text's width.
+    if let Some(view) = find_inline_view(row.upcast_ref()) {
+        let items = items.to_vec();
+        let fit = move |row: &adw::ComboRow| {
+            let text = items
+                .get(row.selected() as usize)
+                .cloned()
+                .unwrap_or_default();
+            let (width, _) = row.create_pango_layout(Some(&text)).pixel_size();
+            view.set_size_request(width + 12, -1);
+            unlimit_labels(&view);
+        };
+        fit(&row);
+        row.connect_map(fit.clone());
+        row.connect_selected_notify(fit);
+    }
     row
+}
+
+/// Labels in the inline choice are limited to a few characters by default.
+fn unlimit_labels(widget: &gtk::Widget) {
+    let mut child = widget.first_child();
+    while let Some(w) = child {
+        if let Some(label) = w.downcast_ref::<gtk::Label>() {
+            label.set_max_width_chars(-1);
+        }
+        unlimit_labels(&w);
+        child = w.next_sibling();
+    }
+}
+
+fn find_inline_view(widget: &gtk::Widget) -> Option<gtk::Widget> {
+    let mut child = widget.first_child();
+    while let Some(w) = child {
+        if w.is::<gtk::ListView>() && w.has_css_class("inline") {
+            return Some(w);
+        }
+        if let Some(found) = find_inline_view(&w) {
+            return Some(found);
+        }
+        child = w.next_sibling();
+    }
+    None
 }
 
 const FITS: [Fit; 5] = [Fit::Fill, Fit::Fit, Fit::Stretch, Fit::Center, Fit::Span];
@@ -1061,4 +1126,15 @@ fn trace(event: &str) {
     {
         let _ = std::io::Write::write_all(&mut f, format!("{ms} {event}\n").as_bytes());
     }
+}
+
+/// Window size, `CHIRP_WINDOW=WxH` for screenshots and UI tests.
+fn window_size() -> (i32, i32) {
+    std::env::var("CHIRP_WINDOW")
+        .ok()
+        .and_then(|v| {
+            let (w, h) = v.split_once('x')?;
+            Some((w.parse().ok()?, h.parse().ok()?))
+        })
+        .unwrap_or((920, 720))
 }

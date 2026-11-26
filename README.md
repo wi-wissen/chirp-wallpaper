@@ -8,10 +8,12 @@ Free, open source (MIT), one small program: no installation, no account, no admi
 * **4K**: downloads the largest version Bing offers (usually 3840×2160), falls back to 1920×1080.
 * **The story behind the picture**: title, place, copyright, a short text, “Learn more” link, text to copy.
 * **21 languages**, picked from the system language (English otherwise). Pictures and texts follow your Bing region.
+* **Second source**: instead of Bing, the landscape background of the Microsoft Edge new tab page
+  (4K, no titles or texts; choose it under Settings → Picture source).
 * **Offline-safe**: if no new picture can be loaded, nothing on screen changes; the app says why.
 * **For all users of a computer**: one click sets up the lock and sign-in screen and the app for every account.
 
-> Chirp Wallpaper is not affiliated with Microsoft. Pictures and texts come from Bing and belong to their photographers.
+> Chirp Wallpaper is not affiliated with Microsoft. Pictures and texts come from Bing (or Microsoft Edge) and belong to their photographers.
 
 ## Download
 
@@ -61,7 +63,8 @@ Without internet nothing changes: the picture already on the computer stays. Acc
 e.g. new ones, get the computer's latest picture instead of the Windows default. The app tells which picture is
 shown and why.
 
-Network access needed: `www.bing.com` only.
+Network access needed: `www.bing.com` only; with the Edge source `assets.msn.com` and
+`img-s-msn-com.akamaized.net` instead.
 
 ## Command line
 
@@ -73,6 +76,7 @@ chirp status       # what is on screen, the story behind it, last result
 chirp install      # change automatically at sign-in and every hour
 chirp uninstall
 chirp config --market de-DE --resolution uhd --lockscreen on
+chirp config --source edge               # Microsoft Edge landscapes instead of Bing
 chirp config --pause-until 2026-12-24
 chirp config --resume
 ```
@@ -118,7 +122,7 @@ A test checks that every language has every text.
 
 | Crate | Purpose |
 |---|---|
-| `chirp-core` | Bing source, cache, configuration, state, offline and baseline logic |
+| `chirp-core` | Bing and Edge sources, cache, configuration, state, offline and baseline logic |
 | `chirp-native` | Windows and GNOME backends, autostart and tasks, translations |
 | `chirp` | command line program |
 | `chirp-app` | Windows app (Slint, Fluent style, tray icon) |

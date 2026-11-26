@@ -44,6 +44,8 @@ export global Tr {
     in property <string> settings-lockscreen: "Lock screen";
     in property <string> settings-lockscreen-desc: "";
     in property <string> settings-picture: "Picture";
+    in property <string> settings-source: "Picture source";
+    in property <string> settings-source-desc: "";
     in property <string> settings-region: "Picture region";
     in property <string> settings-region-desc: "";
     in property <string> settings-resolution: "Resolution";
@@ -214,6 +216,8 @@ export component AppWindow inherits Window {
     in-out property <bool> autostart;
     in-out property <bool> desktop;
     in-out property <bool> lockscreen;
+    in property <[string]> sources;
+    in-out property <int> source-index;
     in property <[string]> regions;
     in-out property <int> region-index;
     in property <[string]> resolutions: ["4K (UHD)", "Full HD (1080p)"];
@@ -641,6 +645,18 @@ export component AppWindow inherits Window {
                     VerticalLayout {
                         VerticalLayout {
                             spacing: 4px;
+                            Row {
+                                title: Tr.settings-source;
+                                description: Tr.settings-source-desc;
+                                ComboBox {
+                                    width: min(260px, max(150px, sv2.visible-width * 0.3));
+                                    model: root.sources;
+                                    current-index <=> root.source-index;
+                                    selected => {
+                                        root.settings-changed();
+                                    }
+                                }
+                            }
                             Row {
                                 title: Tr.settings-region;
                                 description: Tr.settings-region-desc;

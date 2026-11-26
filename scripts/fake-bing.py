@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""A local stand-in for www.bing.com, for testing the apps without internet.
+"""A local stand-in for www.bing.com (and the Microsoft Edge background
+service), for testing the apps without internet.
 
     scripts/fake-bing.py --port 8765 --offline-for 20 --slow 3
 
@@ -7,7 +8,8 @@
                    if there were no network.
 * --slow S         pictures are sent after S seconds, so loading is visible.
 
-Start an app with CHIRP_BING_BASE=http://127.0.0.1:8765 to use it.
+Start an app with CHIRP_BING_BASE=http://127.0.0.1:8765 to use it
+(CHIRP_EDGE_BASE=http://127.0.0.1:8765 for the Edge source).
 Only the Python standard library is needed.
 """
 
@@ -54,6 +56,18 @@ def main():
         },
     }]}
 
+    def edge_size(size):
+        return f"EdgeTest{size}"
+
+    edge_config = {"configs": {"BackgroundImageWC/default": {"properties": {
+        "simpleImages": {"data": [
+            {"attribution": "Testbild", "image": {
+                k: edge_size(k[1:]) for k in ("i100", "i240", "i720", "i1080", "i1440", "i2160")}},
+            {"attribution": "Getty Images", "image": {"i1080": "EdgeOther1080",
+                                                      "i2160": "EdgeOther2160"}},
+        ]},
+    }}}}
+
     class Handler(http.server.BaseHTTPRequestHandler):
         def log_message(self, fmt, *a):
             sys.stderr.write(f"fake-bing {time.monotonic() - started:6.1f}s {fmt % a}\n")
@@ -68,6 +82,15 @@ def main():
                 return self.send(200, "application/json", json.dumps(archive).encode())
             if self.path.startswith("/hp/api/model"):
                 return self.send(200, "application/json", json.dumps(model).encode())
+            if self.path.startswith("/resolver/api/resolve/v3/config/"):
+                if "v=" not in self.path:
+                    return self.send(400, "application/json", b'{"status":400}')
+                return self.send(200, "application/json", json.dumps(edge_config).encode())
+            if self.path.startswith("/tenant/amp/entityid/"):
+                time.sleep(args.slow)
+                thumb = "240" in self.path
+                body = (DATA / ("sample-thumb.jpg" if thumb else "sample.jpg")).read_bytes()
+                return self.send(200, "image/jpeg", body)
             if self.path.startswith("/th?id="):
                 time.sleep(args.slow)
                 thumb = "_400x240" in self.path
