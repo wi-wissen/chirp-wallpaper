@@ -2,6 +2,120 @@
  "configs": {
   "BackgroundImageWC/default": {
    "properties": {
+    "cmsImage": {
+     "data": [
+      {
+       "attribution": "Mike Hill/Getty Images",
+       "image": {
+        "i100": "AA11MZ4L",
+        "i240": "AA11N7BI",
+        "i720": "AA11MZ4M",
+        "i1080": "AA11N2LZ",
+        "i1440": "AA11MSkI",
+        "i2160": "AA11N9kr"
+       }
+      },
+      {
+       "attribution": "Amazing Aerial Agency/Offset by Shutterstock",
+       "image": {
+        "i100": "AA11MDeN",
+        "i240": "AA11N9kq",
+        "i720": "AA11NbLB",
+        "i1080": "AA11N2LX",
+        "i1440": "AA11MSkG",
+        "i2160": "AA11Neyq"
+       }
+      },
+      {
+       "attribution": "AWL Images/Offset by Shutterstock",
+       "image": {
+        "i100": "AA11NbLC",
+        "i240": "AA11MWxx",
+        "i720": "AA11N2LY",
+        "i1080": "AA11NbLD",
+        "i1440": "AA11MZ4O",
+        "i2160": "AA11MV9s"
+       }
+      },
+      {
+       "attribution": "ssucsy/Getty Images",
+       "image": {
+        "i100": "AA11MV9r",
+        "i240": "AA11N9ko",
+        "i720": "AA11MZ4K",
+        "i1080": "AA11N9kp",
+        "i1440": "AA11MPlT",
+        "i2160": "AA11NbLE"
+       }
+      },
+      {
+       "attribution": "Frank DeBonis/Getty Images",
+       "image": {
+        "i100": "AA11MWxw",
+        "i240": "AA11MZ4N",
+        "i720": "AA11MSkH",
+        "i1080": "AA11N5ug",
+        "i1440": "AA11MDeO",
+        "i2160": "AA11MDeP"
+       }
+      },
+      {
+       "attribution": "WIN-Initiative/Getty Images",
+       "image": {
+        "i100": "AA12sc3J",
+        "i240": "AA12s5jp",
+        "i720": "AA12sf7z",
+        "i1080": "AA12s6NU",
+        "i1440": "AA12shEo",
+        "i2160": "AA12sc3O"
+       }
+      },
+      {
+       "attribution": "jimkruger/Getty Images",
+       "image": {
+        "i100": "AA12rxiH",
+        "i240": "AA12s2Nn",
+        "i720": "AA12rMm0",
+        "i1080": "AA12sapl",
+        "i1440": "AA12sapm",
+        "i2160": "AA12s6NW"
+       }
+      },
+      {
+       "attribution": "William Krumpelman/Getty Images",
+       "image": {
+        "i100": "AA12s6NR",
+        "i240": "AA12sapi",
+        "i720": "AA12sjcY",
+        "i1080": "AA12s2Nq",
+        "i1440": "AA12rPIB",
+        "i2160": "AA12rMm1"
+       }
+      },
+      {
+       "attribution": "Vicki Smith/Getty Images",
+       "image": {
+        "i100": "AA12shEk",
+        "i240": "AA12s5jq",
+        "i720": "AA12sf7y",
+        "i1080": "AA12rZ8l",
+        "i1440": "AA12sjd1",
+        "i2160": "AA12s5ju"
+       }
+      },
+      {
+       "attribution": "dleiva/Alamy",
+       "image": {
+        "i100": "AA12sc3K",
+        "i240": "AA12rxiJ",
+        "i720": "AA12sf7A",
+        "i1080": "AA12rZ8k",
+        "i1440": "AA12shEn",
+        "i2160": "AA12sc3Q"
+       }
+      }
+     ]
+    },
     "simpleImages": {
      "data": [
       {
@@ -27,19 +141,30 @@
        }
       },
       {
-       "attribution": "Getty Images",
+       "attribution": "Microsoft",
        "image": {
-        "i100": "BB1msKEq",
-        "i240": "BB1msKEp",
-        "i720": "BB1msB1P",
-        "i1080": "BB1msOP2",
-        "i1440": "BB1msMpB",
-        "i2160": "BB1msFQC"
+        "i100": "AA1NY8Y5",
+        "i240": "AA1NYiiU",
+        "i720": "AA1NYsew",
+        "i1080": "AA1NYfKi",
+        "i1440": "AA1NYfKj",
+        "i2160": "AA1NY8Y6"
        }
       }
      ]
     },
-    "fallbackImageId": "BBYyvk2"
+    "localizedStrings": {
+     "cmsimage_titles": {
+      "simple10": "Sonnenuntergang an einem Hang des Val d'Orcia in der Toskana, Italien",
+      "simple11": "Grünes Polarlicht über Eisberg, Grönland",
+      "simple12": "Wilde Gänseblümchen unter klarem blauem Himmel",
+      "image10": "Falscher Titel"
+     },
+     "cmsimage_querys": {
+      "simple10": "Toskana, Italien",
+      "simple11": "Grönland, Polarlicht"
+     }
+    }
    }
   }
  }

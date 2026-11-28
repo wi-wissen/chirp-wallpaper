@@ -59,13 +59,19 @@ def main():
     def edge_size(size):
         return f"EdgeTest{size}"
 
+    # One gallery picture before the landscapes, so texts are numbered from 1.
     edge_config = {"configs": {"BackgroundImageWC/default": {"properties": {
+        "cmsImage": {"data": [{"attribution": "Getty Images",
+                               "image": {"i1080": "EdgeGallery1080"}}]},
         "simpleImages": {"data": [
             {"attribution": "Testbild", "image": {
                 k: edge_size(k[1:]) for k in ("i100", "i240", "i720", "i1080", "i1440", "i2160")}},
-            {"attribution": "Getty Images", "image": {"i1080": "EdgeOther1080",
-                                                      "i2160": "EdgeOther2160"}},
         ]},
+        "localizedStrings": {
+            "cmsimage_titles": {"image1": "Falscher Titel",
+                                "simple1": "Testlandschaft mit Möwen, Beispielland"},
+            "cmsimage_querys": {"simple1": "Beispielland"},
+        },
     }}}}
 
     class Handler(http.server.BaseHTTPRequestHandler):

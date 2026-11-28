@@ -8,8 +8,8 @@ Free, open source (MIT), one small program: no installation, no account, no admi
 * **4K**: downloads the largest version Bing offers (usually 3840×2160), falls back to 1920×1080.
 * **The story behind the picture**: title, place, copyright, a short text, “Learn more” link, text to copy.
 * **21 languages**, picked from the system language (English otherwise). Pictures and texts follow your Bing region.
-* **Second source**: instead of Bing, the landscape background of the Microsoft Edge new tab page
-  (4K, no titles or texts; choose it under Settings → Picture source).
+* **Second source**: instead of Bing, the landscapes of the Microsoft Edge new tab page, a new one
+  every day with its title (4K; choose it under Settings → Picture source).
 * **Offline-safe**: if no new picture can be loaded, nothing on screen changes; the app says why.
 * **For all users of a computer**: one click sets up the lock and sign-in screen and the app for every account.
 

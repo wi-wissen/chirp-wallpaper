@@ -244,8 +244,8 @@ def scenario_offline_with_picture(home):
 
 
 def scenario_edge_source(home):
-    """Source "Microsoft Edge": its picture is loaded, named in the app's
-    language (Edge has no titles), no Bing request, and the setting is shown."""
+    """Source "Microsoft Edge": its picture is loaded with the title from the
+    Edge texts, no Bing request, and the setting is shown."""
     config = home / "config/chirp-wallpaper"
     config.mkdir(parents=True, exist_ok=True)
     (config / "config.toml").write_text('source = "edge"\n', encoding="utf-8")
@@ -262,8 +262,8 @@ def scenario_edge_source(home):
     c = Check("edge-source")
     c.that(first(ev, "snapshot has_picture=true") is not None, "Edge picture appears")
     c.that(not any("error=true" in e for _, e in ev), "no error shown")
-    c.that(any(e.startswith("toast=") and "Microsoft Edge" in e for _, e in ev),
-           "announced as background from Microsoft Edge")
+    c.that(any(e.startswith("toast=") and "Testlandschaft mit Möwen" in e for _, e in ev),
+           "announced with the title Edge gives the picture")
     images = home / "data/chirp-wallpaper/images"
     c.that((images / "edge-EdgeTest2160.jpg").exists(), "4K picture is stored")
     c.that((images / "edge-EdgeTest2160.thumb.jpg").exists(), "history preview is stored")
